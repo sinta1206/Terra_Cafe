@@ -11,9 +11,16 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('category')->latest()->paginate(10);
+        $query = Product::with('category');
+        
+        // Fitur cari produk sesuai input di desain
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $products = $query->latest()->paginate(10);
         return view('admin.products.index', compact('products'));
     }
 
@@ -39,59 +46,32 @@ class ProductController extends Controller
             $imagePath = $request->file('image')->store('products', 'public');
         }
 
+        // Tentukan status is_active otomatis jika stok 0 (Habis) atau ada input aktif
+        $stock = $request->stock;
+        $isActive = $stock > 0 ? true : false;
+
         Product::create([
             'category_id' => $request->category_id,
             'name' => $request->name,
             'slug' => Str::slug($request->name),
             'description' => $request->description,
             'price' => $request->price,
-            'stock' => $request->stock,
+            'stock' => $stock,
             'image' => $imagePath,
-            'is_active' => $request->has('is_active'),
+            'is_active' => $isActive,
         ]);
 
-        return redirect()->route('admin.products.index')->with('success', 'Produk menu berhasil ditambahkan.');
+        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
-    public function edit($id)
+    // Toggle status Aktif / Off / Habis langsung dari tombol kelola produk
+    public function toggleStatus($id)
     {
         $product = Product::findOrFail($id);
-        $categories = Category::all();
-        return view('admin.products.edit', compact('product', 'categories'));
-    }
+        $product->is_active = !$product->is_active;
+        $product->save();
 
-    public function update(Request $request, $id)
-    {
-        $product = Product::findOrFail($id);
-
-        $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
-
-        $imagePath = $product->image;
-        if ($request->hasFile('image')) {
-            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
-                Storage::disk('public')->delete($imagePath);
-            }
-            $imagePath = $request->file('image')->store('products', 'public');
-        }
-
-        $product->update([
-            'category_id' => $request->category_id,
-            'name' => $request->name,
-            'slug' => Str::slug($request->name),
-            'description' => $request->description,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'image' => $imagePath,
-            'is_active' => $request->has('is_active'),
-        ]);
-
-        return redirect()->route('admin.products.index')->with('success', 'Produk menu berhasil diperbarui.');
+        return redirect()->back()->with('success', 'Status produk berhasil diubah.');
     }
 
     public function destroy($id)

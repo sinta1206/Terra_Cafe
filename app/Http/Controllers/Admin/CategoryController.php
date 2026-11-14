@@ -11,7 +11,8 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::latest()->paginate(10);
+        // Menampilkan daftar kategori beserta jumlah produk di setiap kategori
+        $categories = Category::withCount('products')->latest()->paginate(10);
         return view('admin.categories.index', compact('categories'));
     }
 
@@ -33,12 +34,15 @@ class CategoryController extends Controller
             'description' => $request->description,
         ]);
 
-        return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil ditambahkan.');
+        return redirect()->route('admin.categories.index')->with('success', 'Kategori baru berhasil ditambahkan.');
     }
 
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
+
+        // Sesuai catatan di desain Figma: menghapus kategori tidak menghapus produknya,
+        // namun produk yang bersangkutan bisa dialihkan atau dibiarkan (nullOnDelete / restrict sesuai migrasi)
         $category->delete();
 
         return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil dihapus.');

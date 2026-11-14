@@ -21,10 +21,11 @@ class RegisterController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'phone' => ['required', 'string', 'max:15'],
+            'password' => ['required', 'string', 'min:4', 'confirmed'], // Wajib cocok dengan input password_confirmation
+            'phone' => ['required', 'string', 'max:15'], // Diubah menjadi wajib diisi (required)
         ]);
 
+        // Simpan data user baru sebagai customer
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -33,11 +34,14 @@ class RegisterController extends Controller
             'phone' => $request->phone,
         ]);
 
-        // Buat keranjang belanja otomatis untuk customer baru
-        Cart::create(['user_id' => $user->id]);
+        // Otomatis buatkan keranjang belanja kosong untuk customer baru
+        Cart::create([
+            'user_id' => $user->id,
+        ]);
 
+        // Langsung login setelah daftar akun
         Auth::login($user);
 
-        return redirect('/');
+        return redirect('/customer/dashboard')->with('success', 'Akun berhasil dibuat! Selamat datang di TERRA Cafe.');
     }
 }
