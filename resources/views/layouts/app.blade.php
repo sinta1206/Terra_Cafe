@@ -56,7 +56,6 @@
                                 <i class="fa-solid fa-cart-shopping text-lg"></i>
                             </a>
                         @endif
-
                         
                         <div class="relative flex items-center space-x-3 border-l pl-4 border-gray-200">
                             <span class="text-sm font-medium text-gray-700">Halo, {{ auth()->user()->name }}</span>
@@ -99,72 +98,71 @@
         @yield('content')
     </main>
 
-    <!-- FOOTER GLOBAL (Tampil di Publik & Customer) -->
-    <footer class="bg-[#1C1C1E] text-white pt-16 pb-8 border-t border-gray-800 mt-20">
+    <!-- FOOTER GLOBAL (Tampil di Publik & Customer) - Dipercantik -->
+    <footer class="bg-[#181615] text-white pt-20 pb-10 border-t border-gray-800/80 mt-24">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 pb-12 border-b border-gray-800">
-                <!-- Kolom 1: Tentang Cafe & Sosmed Bulat -->
-                <div>
-                    <div class="flex items-center space-x-2 text-lg font-bold tracking-wider">
-                        <span>☕</span>
-                        <span>{{ $settings['cafe_name'] ?? 'TERRA' }}</span>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-12 pb-16 border-b border-gray-800/80">
+                
+                <!-- Kolom 1: Brand & Tentang (Span 5) -->
+                <div class="md:col-span-5 space-y-4">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-white/10 border border-gray-700 flex items-center justify-center text-sm">☕</span>
+                        <span class="text-lg font-bold tracking-widest text-white uppercase">{{ $settings['cafe_name'] ?? 'TERRA' }}</span>
                     </div>
-                    <p class="text-xs text-gray-400 mt-4 leading-relaxed max-w-sm">
-                        {{ $settings['about_text'] ?? ($settings['cafe_name'] ?? 'TERRA Cafe') . ' adalah ruang di mana kopi, makanan enak, dan percakapan hangat berpadu menjadi satu.' }}
+                    <p class="text-xs text-gray-400 leading-relaxed max-w-sm">
+                        {{ $settings['about_text'] ?? ($settings['cafe_name'] ?? 'TERRA Cafe') . ' adalah ruang di mana kopi berkualitas, hidangan pilihan, dan cerita hangat berpadu menjadi satu.' }}
                     </p>
 
-                    <!-- Sosial Media Ikon Bulat -->
-                    <div class="flex items-center space-x-3 mt-4">
+                    <!-- Sosial Media Ikon Modern -->
+                    <div class="pt-2 flex items-center space-x-3">
                         @if(!empty($settings['instagram_url']))
-                            <a href="{{ $settings['instagram_url'] }}" target="_blank" class="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-300 hover:text-white transition text-xs" title="Instagram">
+                            <a href="{{ $settings['instagram_url'] }}" target="_blank" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-[#2C2623] border border-gray-800 hover:border-gray-600 flex items-center justify-center text-gray-300 hover:text-white transition duration-300 text-xs shadow-sm" title="Instagram">
                                 <i class="fa-brands fa-instagram"></i>
                             </a>
                         @endif
                         @if(!empty($settings['tiktok_url']))
-                            <a href="{{ $settings['tiktok_url'] }}" target="_blank" class="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-300 hover:text-white transition text-xs" title="TikTok">
+                            <a href="{{ $settings['tiktok_url'] }}" target="_blank" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-[#2C2623] border border-gray-800 hover:border-gray-600 flex items-center justify-center text-gray-300 hover:text-white transition duration-300 text-xs shadow-sm" title="TikTok">
                                 <i class="fa-brands fa-tiktok"></i>
                             </a>
                         @endif
                     </div>
                 </div>
 
-                <!-- Kolom 2: Pintasan -->
-                <div>
-                    <h4 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Pintasan</h4>
-                    <ul class="space-y-2 text-xs text-gray-300">
-                        <li><a href="{{ route('public.index') }}" class="hover:text-white transition">Beranda</a></li>
-                        <li><a href="{{ route('public.menu') }}" class="hover:text-white transition">Menu Kami</a></li>
-                        <li><a href="{{ route('public.index') }}#tentang" class="hover:text-white transition">Cerita Kami</a></li>
+                <!-- Kolom 2: Pintasan (Span 3) -->
+                <div class="md:col-span-3 space-y-4">
+                    <h4 class="text-[11px] font-bold uppercase tracking-widest text-gray-300">Pintasan Navigasi</h4>
+                    <ul class="space-y-2.5 text-xs text-gray-400">
+                        <li><a href="{{ route('public.index') }}" class="hover:text-white transition flex items-center space-x-1.5"><span class="text-gray-600">&rsaquo;</span> <span>Beranda Utama</span></a></li>
+                        <li><a href="{{ route('public.menu') }}" class="hover:text-white transition flex items-center space-x-1.5"><span class="text-gray-600">&rsaquo;</span> <span>Katalog Menu Kami</span></a></li>
+                        <li><a href="{{ route('public.index') }}#tentang" class="hover:text-white transition flex items-center space-x-1.5"><span class="text-gray-600">&rsaquo;</span> <span>Cerita & Nilai TERRA</span></a></li>
+                        <li><a href="{{ route('public.index') }}#lokasi" class="hover:text-white transition flex items-center space-x-1.5"><span class="text-gray-600">&rsaquo;</span> <span>Lokasi & Kontak</span></a></li>
                     </ul>
                 </div>
 
-                <!-- Kolom 3: Kontak & Tautan Ikon Sosmed Teks -->
-                <div>
-                    <h4 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Kontak</h4>
-                    <p class="text-xs text-gray-300 mb-2">Telepon / WhatsApp: {{ $settings['cafe_phone'] ?? '-' }}</p>
-                    <p class="text-xs text-gray-400 mb-4">Alamat: {{ $settings['cafe_address'] ?? '-' }}</p>
-
-                    <!-- Tambahan Ikon Sosmed dengan Label Teks di Kolom Kontak -->
-                    <div class="space-y-2 text-xs text-gray-300 pt-2 border-t border-gray-800">
-                        @if(!empty($settings['instagram_url']))
-                            <div class="flex items-center space-x-2">
-                                <i class="fa-brands fa-instagram text-gray-400 w-4"></i>
-                                <a href="{{ $settings['instagram_url'] }}" target="_blank" class="hover:text-white transition">Instagram Resmi</a>
-                            </div>
-                        @endif
-                        @if(!empty($settings['tiktok_url']))
-                            <div class="flex items-center space-x-2">
-                                <i class="fa-brands fa-tiktok text-gray-400 w-4"></i>
-                                <a href="{{ $settings['tiktok_url'] }}" target="_blank" class="hover:text-white transition">TikTok Resmi</a>
-                            </div>
-                        @endif
+                <!-- Kolom 3: Kontak & Jam Operasional (Span 4) -->
+                <div class="md:col-span-4 space-y-4">
+                    <h4 class="text-[11px] font-bold uppercase tracking-widest text-gray-300">Informasi & Kontak</h4>
+                    <div class="space-y-3 text-xs text-gray-400">
+                        <div class="flex items-start space-x-2.5">
+                            <i class="fa-solid fa-location-dot text-gray-500 mt-0.5"></i>
+                            <p class="leading-relaxed"><span class="text-gray-300 font-medium">Alamat:</span><br>{{ $settings['cafe_address'] ?? 'Belum diatur' }}</p>
+                        </div>
+                        <div class="flex items-center space-x-2.5">
+                            <i class="fa-solid fa-phone text-gray-500"></i>
+                            <p><span class="text-gray-300 font-medium">Telepon / WA:</span> {{ $settings['cafe_phone'] ?? '-' }}</p>
+                        </div>
+                        <div class="flex items-center space-x-2.5">
+                            <i class="fa-solid fa-clock text-gray-500"></i>
+                            <p><span class="text-gray-300 font-medium">Jam Buka:</span> {{ $settings['cafe_hours'] ?? '09.00 - 22.00 WIB' }}</p>
+                        </div>
                     </div>
                 </div>
+
             </div>
 
-            <!-- Copyright -->
-            <div class="pt-8 text-center text-xs text-gray-500">
-                <p>&copy; 2026 {{ $settings['cafe_name'] ?? 'TERRA Cafe' }}. Seluruh hak cipta dilindungi.</p>
+            <!-- Copyright & Baris Bawah -->
+            <div class="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 space-y-4 sm:space-y-0">
+                <p>&copy; 2026 <span class="text-gray-400 font-medium">{{ $settings['cafe_name'] ?? 'TERRA Cafe' }}</span>. Seluruh hak cipta dilindungi.</p>
             </div>
         </div>
     </footer>

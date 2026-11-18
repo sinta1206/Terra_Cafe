@@ -68,7 +68,7 @@
                 </div>
                 <div>
                     <h4 class="font-bold text-white text-base">Cozy Space</h4>
-                    <p class="text-xs text-gray-300 mt-1">WiFi cepat, disokong di setiap meja, cocok untuk WFC.</p>
+                    <p class="text-xs text-gray-300 mt-1">WiFi cepat, terdapat colokan listrik di setiap meja, cocok untuk WFC.</p>
                 </div>
             </div>
         </div>
