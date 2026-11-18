@@ -18,13 +18,22 @@ class PaymentController extends Controller
     public function confirmQris($orderId)
     {
         $order = Order::findOrFail($orderId);
-        $order->update(['status' => 'paid']); // Ubah status pesanan menjadi dibayar/menunggu konfirmasi admin
+        
+        // 1. Ubah status PESANAN menjadi 'processing' (agar masuk antrean dapur & tidak cancelled)
+        $order->update(['status' => 'processing']); 
 
+        // 2. Ubah status PEMBAYARAN menjadi 'success'
         $payment = Payment::where('order_id', $order->id)->first();
         if ($payment) {
             $payment->update(['status' => 'success']);
         }
 
-        return redirect()->route('customer.orders.index')->with('success', 'Pembayaran berhasil dikonfirmasi!');
+        return redirect()->route('customer.orders.index')->with('success', 'Pembayaran QRIS berhasil dikonfirmasi!');
+    }
+
+    public function showCash($orderId)
+    {
+        $order = Order::with('payment')->findOrFail($orderId);
+        return view('customer.payment-cash', compact('order'));
     }
 }

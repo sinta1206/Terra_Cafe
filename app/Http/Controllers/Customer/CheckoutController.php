@@ -39,24 +39,23 @@ class CheckoutController extends Controller
             return redirect()->route('customer.cart');
         }
 
-        // Hitung Subtotal
+        // Hitung Subtotal dengan mempertimbangkan harga final item (termasuk Large +3000)
         $subtotal = $cart->items->sum(function ($item) {
-            return $item->product->price * $item->quantity;
+            return ($item->price > 0 ? $item->price : ($item->product->price + (str_contains($item->note, 'Large') ? 3000 : 0))) * $item->quantity;
         });
 
-        // Biaya pengiriman (misalnya Rp 10.000 jika delivery, 0 jika take away/dine in)
-        $shippingFee = $request->order_type === 'delivery' ? 10000 : 0;
+        // Biaya pengiriman: Rp 0 jika take_away atau dine_in, Rp 10.000 jika delivery
+        $shippingFee = ($request->order_type === 'take_away' || $request->order_type === 'dine_in') ? 0 : 10000;
 
-        $discount = 0;
+        // Ambil diskon dari session yang sudah diterapkan di keranjang
+        $discount = session('voucher_discount', 0);
+        $voucherCode = session('applied_voucher');
         $voucherId = null;
 
-        if ($request->filled('voucher_code')) {
-            $voucher = Voucher::where('code', $request->voucher_code)->first();
-            if ($voucher && $subtotal >= $voucher->min_purchase) {
+        if ($voucherCode) {
+            $voucher = Voucher::where('code', $voucherCode)->first();
+            if ($voucher) {
                 $voucherId = $voucher->id;
-                $discount = $voucher->type === 'percent'
-                    ? ($subtotal * $voucher->value / 100)
-                    : $voucher->value;
             }
         }
 
@@ -74,11 +73,13 @@ class CheckoutController extends Controller
         ]);
 
         foreach ($cart->items as $item) {
+            $itemFinalPrice = $item->price > 0 ? $item->price : ($item->product->price + (str_contains($item->note, 'Large') ? 3000 : 0));
+            
             OrderItem::create([
                 'order_id' => $order->id,
                 'product_id' => $item->product_id,
                 'quantity' => $item->quantity,
-                'price' => $item->product->price,
+                'price' => $itemFinalPrice,
                 'note' => $item->note,
             ]);
         }
@@ -91,13 +92,17 @@ class CheckoutController extends Controller
             'status' => 'pending',
         ]);
 
+        // Hapus session voucher setelah checkout berhasil
+        session()->forget(['applied_voucher', 'voucher_discount']);
+
         // Kosongkan keranjang
         $cart->items()->delete();
 
+        // Arahkan ke halaman pembayaran berdasarkan metode yang dipilih
         if ($request->payment_method === 'qris') {
             return redirect()->route('customer.payment.qris', $order->id);
         }
 
-        return redirect()->route('customer.orders.show', $order->id)->with('success', 'Pesanan berhasil dibuat!');
+        return redirect()->route('customer.payment.cash', $order->id);
     }
 }

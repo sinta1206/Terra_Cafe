@@ -29,20 +29,25 @@
                 </div>
 
                 <!-- Nav Links -->
-                <div class="hidden md:flex items-center space-x-8">
-                    @if(request()->routeIs('public.*'))
+                <div class="hidden md:flex items-center space-x-7">
+                    @if(request()->routeIs('public.*') && !auth()->check())
                         <a href="{{ route('public.index') }}#beranda" class="text-sm font-medium text-gray-700 hover:text-black transition">Beranda</a>
                         <a href="{{ route('public.index') }}#tentang" class="text-sm font-medium text-gray-700 hover:text-black transition">Tentang Kami</a>
-                        <a href="{{ route('public.menu') }}" class="text-sm font-medium text-gray-700 hover:text-black transition">Menu Andalan</a>
+                        <a href="{{ route('public.menu') }}" class="text-sm font-medium text-gray-700 hover:text-black transition">Menu</a>
                         <a href="{{ route('public.index') }}#lokasi" class="text-sm font-medium text-gray-700 hover:text-black transition">Lokasi</a>
                     @else
                         @auth
                             @if(auth()->user()->role === 'customer')
-                                <a href="{{ route('customer.dashboard') }}" class="text-sm font-medium text-gray-700 hover:text-black">Beranda</a>
-                                <a href="{{ route('public.menu') }}" class="text-sm font-medium text-gray-700 hover:text-black">Menu</a>
-                                <a href="{{ route('customer.orders.index') }}" class="text-sm font-medium text-gray-700 hover:text-black">Pesanan Saya</a>
-                                <a href="{{ route('customer.favorites') }}" class="text-sm font-medium text-gray-700 hover:text-black">Favorit</a>
+                                <a href="{{ route('customer.dashboard') }}" class="text-xs font-bold {{ request()->routeIs('customer.dashboard') ? 'text-[#2C2623] border-b-2 border-[#2C2623] pb-1' : 'text-gray-500 hover:text-[#2C2623]' }} transition">Beranda</a>
+                                <a href="{{ route('public.menu') }}" class="text-xs font-bold {{ request()->routeIs('public.menu') ? 'text-[#2C2623] border-b-2 border-[#2C2623] pb-1' : 'text-gray-500 hover:text-[#2C2623]' }} transition">Menu</a>
+                                <a href="{{ route('customer.favorites') }}" class="text-xs font-bold {{ request()->routeIs('customer.favorites') ? 'text-[#2C2623] border-b-2 border-[#2C2623] pb-1' : 'text-gray-500 hover:text-[#2C2623]' }} transition">Favorit</a>
+                                <a href="{{ route('customer.orders.index') }}" class="text-xs font-bold {{ request()->routeIs('customer.orders.*') ? 'text-[#2C2623] border-b-2 border-[#2C2623] pb-1' : 'text-gray-500 hover:text-[#2C2623]' }} transition">Pesanan</a>
+                                <a href="{{ route('customer.promos') }}" class="text-xs font-bold {{ request()->routeIs('customer.promos') ? 'text-[#2C2623] border-b-2 border-[#2C2623] pb-1' : 'text-gray-500 hover:text-[#2C2623]' }} transition">Promo</a>
+                                <a href="{{ route('customer.profile.index') }}" class="text-xs font-bold {{ request()->routeIs('customer.profile.*') ? 'text-[#2C2623] border-b-2 border-[#2C2623] pb-1' : 'text-gray-500 hover:text-[#2C2623]' }} transition">Profil</a>
                             @endif
+                        @else
+                            <a href="{{ route('public.index') }}#beranda" class="text-sm font-medium text-gray-700 hover:text-black transition">Beranda</a>
+                            <a href="{{ route('public.menu') }}" class="text-sm font-medium text-gray-700 hover:text-black transition">Menu</a>
                         @endauth
                     @endif
                 </div>
@@ -51,17 +56,19 @@
                 <div class="flex items-center space-x-4">
                     @auth
                         @if(auth()->user()->role === 'customer')
-
-                            <a href="{{ route('customer.cart') }}" class="relative text-gray-700 hover:text-black p-2">
+                            <!-- Ikon Keranjang hanya muncul jika sudah login sebagai customer -->
+                            <a href="{{ route('customer.cart') }}" class="relative text-gray-700 hover:text-black p-2" title="Keranjang">
                                 <i class="fa-solid fa-cart-shopping text-lg"></i>
                             </a>
                         @endif
                         
                         <div class="relative flex items-center space-x-3 border-l pl-4 border-gray-200">
-                            <span class="text-sm font-medium text-gray-700">Halo, {{ auth()->user()->name }}</span>
+                            <!-- Tombol Keluar (Logout) -->
                             <form action="{{ route('logout') }}" method="POST" class="inline">
                                 @csrf
-                                <button type="submit" class="text-sm text-red-600 hover:text-red-800 font-medium">Keluar</button>
+                                <button type="submit" class="w-9 h-9 rounded-full bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition cursor-pointer" title="Keluar">
+                                    <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                                </button>
                             </form>
                         </div>
                     @else
@@ -98,12 +105,12 @@
         @yield('content')
     </main>
 
-    <!-- FOOTER GLOBAL (Tampil di Publik & Customer) - Dipercantik -->
+    <!-- FOOTER GLOBAL -->
     <footer class="bg-[#181615] text-white pt-20 pb-10 border-t border-gray-800/80 mt-24">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-12 pb-16 border-b border-gray-800/80">
+               
                 
-                <!-- Kolom 1: Brand & Tentang (Span 5) -->
                 <div class="md:col-span-5 space-y-4">
                     <div class="flex items-center space-x-2.5">
                         <span class="w-9 h-9 rounded-xl bg-white/10 border border-gray-700 flex items-center justify-center text-sm">☕</span>
@@ -113,7 +120,7 @@
                         {{ $settings['about_text'] ?? ($settings['cafe_name'] ?? 'TERRA Cafe') . ' adalah ruang di mana kopi berkualitas, hidangan pilihan, dan cerita hangat berpadu menjadi satu.' }}
                     </p>
 
-                    <!-- Sosial Media Ikon Modern -->
+
                     <div class="pt-2 flex items-center space-x-3">
                         @if(!empty($settings['instagram_url']))
                             <a href="{{ $settings['instagram_url'] }}" target="_blank" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-[#2C2623] border border-gray-800 hover:border-gray-600 flex items-center justify-center text-gray-300 hover:text-white transition duration-300 text-xs shadow-sm" title="Instagram">
@@ -128,7 +135,7 @@
                     </div>
                 </div>
 
-                <!-- Kolom 2: Pintasan (Span 3) -->
+
                 <div class="md:col-span-3 space-y-4">
                     <h4 class="text-[11px] font-bold uppercase tracking-widest text-gray-300">Pintasan Navigasi</h4>
                     <ul class="space-y-2.5 text-xs text-gray-400">
@@ -139,7 +146,7 @@
                     </ul>
                 </div>
 
-                <!-- Kolom 3: Kontak & Jam Operasional (Span 4) -->
+
                 <div class="md:col-span-4 space-y-4">
                     <h4 class="text-[11px] font-bold uppercase tracking-widest text-gray-300">Informasi & Kontak</h4>
                     <div class="space-y-3 text-xs text-gray-400">
@@ -160,7 +167,7 @@
 
             </div>
 
-            <!-- Copyright & Baris Bawah -->
+
             <div class="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 space-y-4 sm:space-y-0">
                 <p>&copy; 2026 <span class="text-gray-400 font-medium">{{ $settings['cafe_name'] ?? 'TERRA Cafe' }}</span>. Seluruh hak cipta dilindungi.</p>
             </div>

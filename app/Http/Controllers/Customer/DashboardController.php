@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
-use App\Models\Order;
 use App\Models\Category;
+use App\Models\Cart;
 
 class DashboardController extends Controller
 {
@@ -14,20 +14,17 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        // Mengambil pesanan terbaru milik customer yang sedang login
-        $recentOrders = Order::where('user_id', $user->id)
-                             ->latest()
-                             ->take(3)
-                             ->get();
-
-        // Mengambil kategori untuk filter menu cepat di dashboard
+        
         $categories = Category::all();
+        
+        // Load produk beserta relasi category dan favorites milik user yang sedang login
+        $products = Product::with(['category', 'favorites' => function($query) use ($user) {
+            $query->where('user_id', $user->id);
+        }])->where('is_active', true)->take(12)->get();
 
-        // Mengambil produk populer / terlaris atau produk aktif
-        $popularProducts = Product::where('is_active', true)
-                                  ->take(6)
-                                  ->get();
+        // Ambil data keranjang untuk widget sticky di kanan
+        $cart = Cart::with('items.product')->where('user_id', $user->id)->first();
 
-        return view('customer.dashboard', compact('user', 'recentOrders', 'categories', 'popularProducts'));
+        return view('customer.dashboard', compact('user', 'categories', 'products', 'cart'));
     }
 }

@@ -75,18 +75,18 @@
                 </nav>
             </div>
 
-            <!-- User Info & Logout Bottom -->
+            <!-- User Info & Logout Bottom (Disesuaikan dengan Akun Login) -->
             <div class="p-4 border-t border-[#EFECE6] flex items-center justify-between">
                 <div class="flex items-center space-x-3 overflow-hidden">
-                    <div class="w-8 h-8 rounded-full bg-[#2C2623] text-white flex items-center justify-center font-bold text-xs">
+                    <div class="w-8 h-8 rounded-full bg-[#2C2623] text-white flex items-center justify-center font-bold text-xs uppercase flex-shrink-0">
                         {{ substr(auth()->user()->name ?? 'A', 0, 1) }}
                     </div>
                     <div class="truncate">
                         <p class="text-xs font-bold text-[#2C2623] truncate">{{ auth()->user()->name ?? 'Admin Cafe' }}</p>
-                        <p class="text-[10px] text-gray-500 truncate">admin@terra.id</p>
+                        <p class="text-[10px] text-gray-500 truncate">{{ auth()->user()->email ?? 'admin@terracafe.com' }}</p>
                     </div>
                 </div>
-                <form action="{{ route('logout') }}" method="POST">
+                <form action="{{ route('logout') }}" method="POST" class="flex-shrink-0">
                     @csrf
                     <button type="submit" title="Keluar" class="text-gray-400 hover:text-red-600 p-2 rounded-lg transition">
                         <i class="fa-solid fa-right-from-bracket text-sm"></i>
@@ -106,7 +106,7 @@
 
             <!-- MAIN VIEW CONTENT -->
             <main class="p-6 md:p-8 max-w-7xl w-full mx-auto">
-                <!-- NOTIFIKASI SUCCESS YANG SUDAH DIPERBAIKI (ESTETIK & RAPI) -->
+                <!-- NOTIFIKASI SUCCESS -->
                 @if(session('success'))
                     <div class="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl text-xs font-medium flex items-center justify-between shadow-xs">
                         <div class="flex items-center space-x-2">

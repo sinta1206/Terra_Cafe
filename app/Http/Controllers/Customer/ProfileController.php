@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Voucher;
+use App\Models\Order;
+use App\Models\Favorite;
 
 class ProfileController extends Controller
 {
@@ -14,7 +17,15 @@ class ProfileController extends Controller
     public function index()
     {
         $user = auth()->user();
-        return view('customer.profile.index', compact('user'));
+        
+        // Menggunakan try-catch agar aman jika struktur kolom voucher berbeda
+        try {
+            $activeVouchersCount = Voucher::count();
+        } catch (\Exception $e) {
+            $activeVouchersCount = 0;
+        }
+
+        return view('customer.profile.index', compact('user', 'activeVouchersCount'));
     }
 
     /**
@@ -23,7 +34,11 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = auth()->user();
-        return view('customer.profile.edit', compact('user'));
+        
+        $ordersCount = Order::where('user_id', $user->id)->count();
+        $favoritesCount = Favorite::where('user_id', $user->id)->count();
+
+        return view('customer.profile.edit', compact('user', 'ordersCount', 'favoritesCount'));
     }
 
     /**
@@ -35,14 +50,18 @@ class ProfileController extends Controller
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:15'],
-            'password' => ['nullable', 'string', 'min:4', 'confirmed'], // Opsional jika ingin ganti password
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone' => ['nullable', 'string', 'max:15'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'password' => ['nullable', 'string', 'min:4', 'confirmed'],
         ]);
 
         $user->name = $request->name;
+        $user->email = $request->email;
         $user->phone = $request->phone;
+        $user->address = $request->address;
 
-        // Jika kolom password diisi, update password baru (minimal 4 karakter sesuai demo)
+        
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
         }

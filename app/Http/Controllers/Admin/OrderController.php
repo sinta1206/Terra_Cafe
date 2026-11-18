@@ -10,23 +10,23 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Order::with('user', 'items.product');
+        $query = Order::with('user', 'items.product', 'payment');
 
         // Filter berdasarkan pencarian nomor pesanan / customer
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where('invoice_number', 'like', "%{$search}%")
+            $search =$request->search;
+            $query->where('invoice_number', 'like', "\%{$search}%")
                   ->orWhereHas('user', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
+                      $q->where('name', 'like', "\%{$search}%");
                   });
         }
 
-        // Filter berdasarkan status pesanan (Semua status / pending / processing / completed)
-        if ($request->filled('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
+        // Filter berdasarkan status pesanan
+        if ($request->filled('status') &&$request->status !== 'all') {
+            $query->where('status',$request->status);
         }
 
-        $orders = $query->latest()->paginate(10);
+        $orders =$query->latest()->paginate(10);
         return view('admin.orders.index', compact('orders'));
     }
 
@@ -36,8 +36,8 @@ class OrderController extends Controller
         return view('admin.orders.show', compact('order'));
     }
 
-    // Aksi tombol "Terima Pesanan" atau "Tandai Selesai" dari halaman Kelola Pesanan
-    public function updateStatus(Request $request, $id)
+    // Aksi tombol ubah status proses pesanan (pending/processing/completed/cancelled)
+    public function updateStatus(Request $request,$id)
     {
         $order = Order::findOrFail($id);
 
@@ -45,8 +45,19 @@ class OrderController extends Controller
             'status' => 'required|in:pending,paid,processing,completed,cancelled',
         ]);
 
-        $order->update(['status' => $request->status]);
+        $order->update(['status' =>$request->status]);
 
         return redirect()->back()->with('success', 'Status pesanan #' . $order->invoice_number . ' berhasil diperbarui.');
+    }
+
+    // Aksi khusus kasir untuk mengonfirmasi pembayaran tunai menjadi lunas
+    public function updatePaymentStatus(Request $request,$id)
+    {
+        $order = Order::with('payment')->findOrFail($id);
+
+        if ($order->payment) {$order->payment->update(['status' => 'success']); // atau 'paid'
+        }
+
+        return redirect()->back()->with('success', 'Pembayaran untuk invoice #' . $order->invoice_number . ' berhasil dikonfirmasi Lunas.');
     }
 }

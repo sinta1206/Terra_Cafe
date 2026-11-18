@@ -2,7 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 
-// --- CONTROLLER IMPORTS ---
+// ==========================================
+// CONTROLLER IMPORTS
+// ==========================================
+// Auth & Public
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\PublicController;
@@ -31,7 +34,7 @@ use App\Http\Controllers\Customer\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Web Routes - TERRA Cafe
 |--------------------------------------------------------------------------
 */
 
@@ -40,7 +43,7 @@ use App\Http\Controllers\Customer\ProfileController;
 // ==========================================
 Route::get('/', [PublicController::class, 'index'])->name('public.index');
 Route::get('/menu', [PublicController::class, 'menu'])->name('public.menu');
-Route::get('/products/{id}', [PublicController::class, 'showProduct'])->name('public.product.detail');
+Route::get('/menu/products/{id}', [PublicController::class, 'showProduct'])->name('public.product.detail');
 Route::get('/about', [PublicController::class, 'about'])->name('public.about');
 Route::get('/location', [PublicController::class, 'location'])->name('public.location');
 
@@ -64,29 +67,31 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 // ==========================================
 Route::middleware(['auth'])->prefix('customer')->name('customer.')->group(function () {
     
-
     Route::group(['middleware' => function ($request, $next) {
         if (auth()->check() && auth()->user()->role !== 'customer') {
             abort(403, 'Akses khusus pelanggan.');
         }
         return $next($request);
     }], function () {
-        // Dashboard & Detail Produk
+        
+        // Dashboard & Detail Produk Pelanggan
         Route::get('/dashboard', [CustomerDashboardController::class, 'index'])->name('dashboard');
         Route::get('/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
 
-        // Keranjang Belanja (Cart)
+        // Keranjang Belanja (Cart) & Voucher
         Route::get('/cart', [CartController::class, 'index'])->name('cart');
         Route::post('/cart/add/{product}', [CartController::class, 'add'])->name('cart.add');
         Route::patch('/cart/update/{id}', [CartController::class, 'updateQuantity'])->name('cart.update');
         Route::delete('/cart/remove/{id}', [CartController::class, 'removeItem'])->name('cart.remove');
+        Route::post('/cart/apply-voucher', [CartController::class, 'applyVoucher'])->name('cart.voucher');
 
-        // Checkout & Pembayaran QRIS
+        // Checkout & Pembayaran
         Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
         Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
 
         Route::get('/payment/qris/{orderId}', [PaymentController::class, 'showQris'])->name('payment.qris');
         Route::post('/payment/qris/confirm/{orderId}', [PaymentController::class, 'confirmQris'])->name('payment.qris.confirm');
+        Route::get('/payment/cash/{orderId}', [PaymentController::class, 'showCash'])->name('payment.cash');
 
         // Pesanan (Orders) & Pelacakan
         Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders.index');
@@ -118,35 +123,35 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         }
         return $next($request);
     }], function () {
+        
         // Dashboard Admin
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-        // Kelola Kategori
+        // Kelola Kategori & Produk
         Route::resource('categories', AdminCategoryController::class)->except(['show', 'edit', 'update']);
-
-        // Kelola Produk Menu
-        Route::resource('products', AdminProductController::class)->except(['show']);
         
-        // Toggle Status Aktif/Off Produk
+        Route::resource('products', AdminProductController::class)->except(['show']);
+       
         Route::patch('/products/{id}/toggle-status', [AdminProductController::class, 'toggleStatus'])->name('products.toggle');
 
         // Kelola Pesanan Masuk
         Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
         Route::get('/orders/{id}', [AdminOrderController::class, 'show'])->name('orders.show');
         Route::patch('/orders/{id}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
+        Route::patch('/orders/{id}/payment-status', [AdminOrderController::class, 'updatePaymentStatus'])->name('orders.payment-status');
 
-        // Kelola Voucher & Promo (Single-page form + table)
+        // Kelola Voucher & Promo
         Route::resource('vouchers', AdminVoucherController::class)->except(['show', 'create', 'edit', 'update']);
         Route::patch('/vouchers/{id}/toggle-status', [AdminVoucherController::class, 'toggleStatus'])->name('vouchers.toggle');
 
-        // Data Pelanggan (Customer)
+        // Data Pelanggan
         Route::get('/customers', [AdminCustomerController::class, 'index'])->name('customers.index');
 
         // Laporan Penjualan & Ekspor CSV
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/export-csv', [AdminReportController::class, 'exportCsv'])->name('reports.csv');
 
-        // Pengaturan Kafe (Settings)
+        // Pengaturan Kafe
         Route::get('/settings', [AdminSettingController::class, 'index'])->name('settings.index');
         Route::put('/settings', [AdminSettingController::class, 'update'])->name('settings.update');
     });

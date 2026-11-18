@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('cart_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
+            $table->decimal('price', 10, 2); // <--- Kolom baru untuk menyimpan harga satuan (termasuk tambahan ukuran Large)
             $table->text('note')->nullable();
             $table->timestamps();
         });
