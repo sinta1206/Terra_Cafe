@@ -11,32 +11,57 @@
             <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Kategori</label>
             <select name="category_id" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none">
                 @foreach($categories as $cat)
-                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                    <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                 @endforeach
             </select>
+            @error('category_id')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
         </div>
+
         <div>
             <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Nama Produk</label>
-            <input type="text" name="name" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm">
+            <input type="text" name="name" value="{{ old('name') }}" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-black">
+            
+            <!-- Pesan Error Jika Nama Produk Sudah Ada -->
+            @error('name')
+                <p class="text-red-500 text-xs mt-1 font-medium">{{ $message }}</p>
+            @enderror
         </div>
+
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Harga (Rp)</label>
-                <input type="number" name="price" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm">
+                <input type="number" name="price" value="{{ old('price') }}" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none">
+                @error('price')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
             </div>
             <div>
                 <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Stok</label>
-                <input type="number" name="stock" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm">
+                <input type="number" name="stock" value="{{ old('stock') }}" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none">
+                @error('stock')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
             </div>
         </div>
+
         <div>
             <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Deskripsi</label>
-            <textarea name="description" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm"></textarea>
+            <textarea name="description" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none">{{ old('description') }}</textarea>
+            @error('description')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
         </div>
+
         <div>
             <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Foto Produk</label>
             <input type="file" name="image" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-900 file:text-white">
+            @error('image')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
         </div>
+
         <button type="submit" class="w-full py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-black transition">Simpan Produk</button>
     </form>
 </div>

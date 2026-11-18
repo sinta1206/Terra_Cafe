@@ -5,57 +5,52 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
-use App\Models\OrderItem;
-use Illuminate\Support\Facades\DB;
+use App\Models\OrderItem; // Sesuaikan dengan nama model item pesanan Anda
 
 class ReportController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        // Query utama hanya untuk pesanan yang berstatus selesai (completed)
-        $query = Order::where('status', 'completed');
+        // 1. Total nilai pesanan (keseluruhan atau yang berstatus selesai/paid)
+        $totalRevenue = Order::whereIn('status', ['paid', 'processing', 'completed'])->sum('total_amount');
 
-        // Filter rentang tanggal jika dipilih oleh admin
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
-        }
+        // 2. Jumlah transaksi selesai
+        $completedTransactionsCount = Order::where('status', 'completed')->count();
 
-        // Ringkasan Statistik
-        $totalRevenue = (clone $query)->sum('total_amount');
-        $totalTransactions = (clone $query)->count();
+        // 3. Total produk terjual (akumulasi quantity dari item pesanan)
+        // Sesuaikan relasi jika menggunakan orderItems / items
+        $totalItemsSold = OrderItem::whereHas('order', function($q) {
+            $q->whereIn('status', ['paid', 'processing', 'completed']);
+        })->sum('quantity');
 
-        // Menghitung total item produk yang terjual
-        $completedOrderIds = (clone $query)->pluck('id');
-        $totalItemsSold = OrderItem::whereIn('order_id', $completedOrderIds)->sum('quantity');
+        // 4. Rata-rata pesanan per customer
+        $averageOrderValue = $completedTransactionsCount > 0 ? $totalRevenue / $completedTransactionsCount : 0;
 
-        // Daftar produk terlaris (akumulasi produk terjual)
-        $topProducts = OrderItem::select('product_id',
-                DB::raw('SUM(quantity) as total_qty'),
-                DB::raw('SUM(price * quantity) as total_sales'))
-            ->whereIn('order_id', $completedOrderIds)
-            ->with('product.category')
+        // 5. Produk terlaris (dikelompokkan berdasarkan produk)
+        $topProducts = OrderItem::with('product')
+            ->select('product_id', \DB::raw('SUM(quantity) as total_qty'), \DB::raw('SUM(price * quantity) as total_sales'))
             ->groupBy('product_id')
             ->orderByDesc('total_qty')
+            ->take(5)
             ->get();
 
-        $reports = $query->latest()->paginate(15);
+
 
         return view('admin.reports.index', compact(
-            'reports',
+
             'totalRevenue',
-            'totalTransactions',
+            'completedTransactionsCount',
             'totalItemsSold',
+            'averageOrderValue',
             'topProducts'
         ));
     }
 
-    // Fitur Tombol "Ekspor CSV" sesuai desain Figma
-    public function exportCsv(Request $request)
+    public function exportCsv()
     {
-        $filename = 'laporan-penjualan-terracafe-' . date('Y-m-d') . '.csv';
-
-        $orders = Order::with('user')->where('status', 'completed')->get();
-
+        // Log sederhana ekspor CSV laporan
+        $filename = 'laporan-penjualan-' . date('Y-m-d') . '.csv';
+        
         $headers = [
             "Content-type" => "text/csv",
             "Content-Disposition" => "attachment; filename=$filename",
@@ -64,15 +59,17 @@ class ReportController extends Controller
             "Expires" => "0"
         ];
 
+        $orders = Order::with('user')->whereIn('status', ['paid', 'processing', 'completed'])->get();
+
         $callback = function() use ($orders) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Invoice', 'Customer', 'Tanggal', 'Total Belanja', 'Status']);
+            fputcsv($file, ['Invoice', 'Pelanggan', 'Tanggal', 'Total', 'Status']);
 
             foreach ($orders as $order) {
                 fputcsv($file, [
                     $order->invoice_number,
-                    $order->user->name ?? 'Guest',
-                    $order->created_at,
+                    $order->user->name ?? 'Tamu',
+                    $order->created_at->format('Y-m-d H:i'),
                     $order->total_amount,
                     $order->status
                 ]);

@@ -40,6 +40,7 @@ use App\Http\Controllers\Customer\ProfileController;
 // ==========================================
 Route::get('/', [PublicController::class, 'index'])->name('public.index');
 Route::get('/menu', [PublicController::class, 'menu'])->name('public.menu');
+Route::get('/products/{id}', [PublicController::class, 'showProduct'])->name('public.product.detail');
 Route::get('/about', [PublicController::class, 'about'])->name('public.about');
 Route::get('/location', [PublicController::class, 'location'])->name('public.location');
 
@@ -62,8 +63,8 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 // 3. ROUTE CUSTOMER (Khusus Peran Customer)
 // ==========================================
 Route::middleware(['auth'])->prefix('customer')->name('customer.')->group(function () {
+    
 
-    // Validasi tambahan di dalam group / pastikan role customer
     Route::group(['middleware' => function ($request, $next) {
         if (auth()->check() && auth()->user()->role !== 'customer') {
             abort(403, 'Akses khusus pelanggan.');
@@ -110,7 +111,7 @@ Route::middleware(['auth'])->prefix('customer')->name('customer.')->group(functi
 // ==========================================
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
 
-    // Validasi tambahan / pastikan role admin
+
     Route::group(['middleware' => function ($request, $next) {
         if (auth()->check() && auth()->user()->role !== 'admin') {
             abort(403, 'Akses khusus admin.');
@@ -125,6 +126,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
         // Kelola Produk Menu
         Route::resource('products', AdminProductController::class)->except(['show']);
+        
+        // Toggle Status Aktif/Off Produk
         Route::patch('/products/{id}/toggle-status', [AdminProductController::class, 'toggleStatus'])->name('products.toggle');
 
         // Kelola Pesanan Masuk
@@ -132,8 +135,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/orders/{id}', [AdminOrderController::class, 'show'])->name('orders.show');
         Route::patch('/orders/{id}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
 
-        // Kelola Voucher & Promo
-        Route::resource('vouchers', AdminVoucherController::class)->except(['show', 'edit', 'update']);
+        // Kelola Voucher & Promo (Single-page form + table)
+        Route::resource('vouchers', AdminVoucherController::class)->except(['show', 'create', 'edit', 'update']);
+        Route::patch('/vouchers/{id}/toggle-status', [AdminVoucherController::class, 'toggleStatus'])->name('vouchers.toggle');
 
         // Data Pelanggan (Customer)
         Route::get('/customers', [AdminCustomerController::class, 'index'])->name('customers.index');

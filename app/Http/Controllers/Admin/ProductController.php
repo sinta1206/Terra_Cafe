@@ -20,8 +20,15 @@ class ProductController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        $products = $query->latest()->paginate(10);
-        return view('admin.products.index', compact('products'));
+        // Fitur filter berdasarkan kategori
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        $products = $query->latest()->paginate(12);
+        $categories = Category::all(); // Mengambil data kategori untuk dropdown filter di view
+
+        return view('admin.products.index', compact('products', 'categories'));
     }
 
     public function create()
@@ -34,19 +41,25 @@ class ProductController extends Controller
     {
         $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:products,name',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'description' => 'nullable|string',
+        ], [
+            'name.unique' => 'Nama produk ini sudah ada! Silakan gunakan nama lain.',
+            'name.required' => 'Nama produk wajib diisi.',
+            'category_id.required' => 'Kategori wajib dipilih.',
+            'price.required' => 'Harga produk wajib diisi.',
+            'stock.required' => 'Stok produk wajib diisi.',
         ]);
 
         $imagePath = null;
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('products', 'public');
         }
+        
 
-        // Tentukan status is_active otomatis jika stok 0 (Habis) atau ada input aktif
         $stock = $request->stock;
         $isActive = $stock > 0 ? true : false;
 
@@ -62,6 +75,60 @@ class ProductController extends Controller
         ]);
 
         return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan.');
+    }
+
+    // ==========================================
+    // TAMBAHAN: Method Edit & Update Produk
+    // ==========================================
+    public function edit($id)
+    {
+        $product = Product::findOrFail($id);
+        $categories = Category::all();
+        return view('admin.products.edit', compact('product', 'categories'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:255|unique:products,name,' . $product->id, // Mengabaikan nama produk ini sendiri saat validasi unique
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'description' => 'nullable|string',
+        ], [
+            'name.unique' => 'Nama produk ini sudah ada! Silakan gunakan nama lain.',
+            'name.required' => 'Nama produk wajib diisi.',
+            'category_id.required' => 'Kategori wajib dipilih.',
+            'price.required' => 'Harga produk wajib diisi.',
+            'stock.required' => 'Stok produk wajib diisi.',
+        ]);
+
+        $imagePath = $product->image;
+        if ($request->hasFile('image')) {
+            if ($product->image && Storage::disk('public')->exists($product->image)) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $imagePath = $request->file('image')->store('products', 'public');
+        }
+
+        $stock = $request->stock;
+        $isActive = $stock > 0 ? $product->is_active : false;
+
+        $product->update([
+            'category_id' => $request->category_id,
+            'name' => $request->name,
+            'slug' => Str::slug($request->name),
+            'description' => $request->description,
+            'price' => $request->price,
+            'stock' => $stock,
+            'image' => $imagePath,
+            'is_active' => $isActive,
+        ]);
+
+        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil diperbarui.');
     }
 
     // Toggle status Aktif / Off / Habis langsung dari tombol kelola produk

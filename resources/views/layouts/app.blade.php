@@ -8,48 +8,56 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome untuk Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased flex flex-col min-h-screen">
+<body class="bg-[#FAF8F5] text-gray-800 font-sans antialiased flex flex-col min-h-screen">
 
     <!-- NAVBAR -->
     <nav class="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
+            <div class="flex justify-between h-20 items-center">
                 <!-- Logo & Brand -->
                 <div class="flex items-center">
-                    <a href="{{ auth()->check() && auth()->user()->role === 'customer' ? route('customer.dashboard') : route('public.index') }}" class="text-xl font-bold tracking-wider text-gray-900">
-                        ☕ TERRA <span class="font-light text-gray-500">CAFE</span>
+                    <a href="{{ request()->routeIs('public.index') ? '#beranda' : route('public.index') }}" class="text-xl font-bold tracking-wider text-[#2C2623] flex items-center space-x-2">
+                        <span class="w-8 h-8 rounded-full border border-[#2C2623] flex items-center justify-center text-xs">☕</span>
+                        <span>TERRA</span>
                     </a>
                 </div>
 
                 <!-- Nav Links -->
                 <div class="hidden md:flex items-center space-x-8">
-                    @auth
-                        @if(auth()->user()->role === 'customer')
-                            <a href="{{ route('customer.dashboard') }}" class="text-sm font-medium text-gray-700 hover:text-black">Beranda</a>
-                            <a href="{{ route('public.menu') }}" class="text-sm font-medium text-gray-700 hover:text-black">Menu</a>
-                            <a href="{{ route('customer.orders.index') }}" class="text-sm font-medium text-gray-700 hover:text-black">Pesanan Saya</a>
-                            <a href="{{ route('customer.favorites') }}" class="text-sm font-medium text-gray-700 hover:text-black">Favorit</a>
-                        @endif
+                    @if(request()->routeIs('public.*'))
+                        <a href="{{ route('public.index') }}#beranda" class="text-sm font-medium text-gray-700 hover:text-black transition">Beranda</a>
+                        <a href="{{ route('public.index') }}#tentang" class="text-sm font-medium text-gray-700 hover:text-black transition">Tentang Kami</a>
+                        <a href="{{ route('public.menu') }}" class="text-sm font-medium text-gray-700 hover:text-black transition">Menu Andalan</a>
+                        <a href="{{ route('public.index') }}#lokasi" class="text-sm font-medium text-gray-700 hover:text-black transition">Lokasi</a>
                     @else
-                        <a href="{{ route('public.index') }}" class="text-sm font-medium text-gray-700 hover:text-black">Beranda</a>
-                        <a href="{{ route('public.menu') }}" class="text-sm font-medium text-gray-700 hover:text-black">Menu</a>
-                        <a href="{{ route('public.about') }}" class="text-sm font-medium text-gray-700 hover:text-black">Tentang Kami</a>
-                        <a href="{{ route('public.location') }}" class="text-sm font-medium text-gray-700 hover:text-black">Lokasi</a>
-                    @endauth
+                        @auth
+                            @if(auth()->user()->role === 'customer')
+                                <a href="{{ route('customer.dashboard') }}" class="text-sm font-medium text-gray-700 hover:text-black">Beranda</a>
+                                <a href="{{ route('public.menu') }}" class="text-sm font-medium text-gray-700 hover:text-black">Menu</a>
+                                <a href="{{ route('customer.orders.index') }}" class="text-sm font-medium text-gray-700 hover:text-black">Pesanan Saya</a>
+                                <a href="{{ route('customer.favorites') }}" class="text-sm font-medium text-gray-700 hover:text-black">Favorit</a>
+                            @endif
+                        @endauth
+                    @endif
                 </div>
 
-                <!-- Right Actions (Cart & Profile/Auth) -->
+                <!-- Right Actions -->
                 <div class="flex items-center space-x-4">
                     @auth
                         @if(auth()->user()->role === 'customer')
-                            <!-- Keranjang -->
+
                             <a href="{{ route('customer.cart') }}" class="relative text-gray-700 hover:text-black p-2">
                                 <i class="fa-solid fa-cart-shopping text-lg"></i>
                             </a>
                         @endif
 
-                        <!-- Profil Dropdown / Menu User -->
+                        
                         <div class="relative flex items-center space-x-3 border-l pl-4 border-gray-200">
                             <span class="text-sm font-medium text-gray-700">Halo, {{ auth()->user()->name }}</span>
                             <form action="{{ route('logout') }}" method="POST" class="inline">
@@ -58,8 +66,9 @@
                             </form>
                         </div>
                     @else
-                        <a href="{{ route('login') }}" class="text-sm font-medium text-gray-700 hover:text-black px-4 py-2">Masuk</a>
-                        <a href="{{ route('register') }}" class="text-sm font-medium bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">Daftar</a>
+                        <a href="{{ route('login') }}" class="px-6 py-2.5 bg-[#2C2623] text-white rounded-full text-sm font-medium hover:bg-black transition shadow-sm">
+                            LOGIN
+                        </a>
                     @endauth
                 </div>
             </div>
@@ -90,9 +99,74 @@
         @yield('content')
     </main>
 
-    <!-- FOOTER -->
-    <footer class="bg-white border-t border-gray-100 mt-16 py-8 text-center text-sm text-gray-500">
-        <p>&copy; 2026 TERRA Cafe. Seluruh hak cipta dilindungi.</p>
+    <!-- FOOTER GLOBAL (Tampil di Publik & Customer) -->
+    <footer class="bg-[#1C1C1E] text-white pt-16 pb-8 border-t border-gray-800 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 pb-12 border-b border-gray-800">
+                <!-- Kolom 1: Tentang Cafe & Sosmed Bulat -->
+                <div>
+                    <div class="flex items-center space-x-2 text-lg font-bold tracking-wider">
+                        <span>☕</span>
+                        <span>{{ $settings['cafe_name'] ?? 'TERRA' }}</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-4 leading-relaxed max-w-sm">
+                        {{ $settings['about_text'] ?? ($settings['cafe_name'] ?? 'TERRA Cafe') . ' adalah ruang di mana kopi, makanan enak, dan percakapan hangat berpadu menjadi satu.' }}
+                    </p>
+
+                    <!-- Sosial Media Ikon Bulat -->
+                    <div class="flex items-center space-x-3 mt-4">
+                        @if(!empty($settings['instagram_url']))
+                            <a href="{{ $settings['instagram_url'] }}" target="_blank" class="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-300 hover:text-white transition text-xs" title="Instagram">
+                                <i class="fa-brands fa-instagram"></i>
+                            </a>
+                        @endif
+                        @if(!empty($settings['tiktok_url']))
+                            <a href="{{ $settings['tiktok_url'] }}" target="_blank" class="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-300 hover:text-white transition text-xs" title="TikTok">
+                                <i class="fa-brands fa-tiktok"></i>
+                            </a>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Kolom 2: Pintasan -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Pintasan</h4>
+                    <ul class="space-y-2 text-xs text-gray-300">
+                        <li><a href="{{ route('public.index') }}" class="hover:text-white transition">Beranda</a></li>
+                        <li><a href="{{ route('public.menu') }}" class="hover:text-white transition">Menu Kami</a></li>
+                        <li><a href="{{ route('public.index') }}#tentang" class="hover:text-white transition">Cerita Kami</a></li>
+                    </ul>
+                </div>
+
+                <!-- Kolom 3: Kontak & Tautan Ikon Sosmed Teks -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Kontak</h4>
+                    <p class="text-xs text-gray-300 mb-2">Telepon / WhatsApp: {{ $settings['cafe_phone'] ?? '-' }}</p>
+                    <p class="text-xs text-gray-400 mb-4">Alamat: {{ $settings['cafe_address'] ?? '-' }}</p>
+
+                    <!-- Tambahan Ikon Sosmed dengan Label Teks di Kolom Kontak -->
+                    <div class="space-y-2 text-xs text-gray-300 pt-2 border-t border-gray-800">
+                        @if(!empty($settings['instagram_url']))
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-brands fa-instagram text-gray-400 w-4"></i>
+                                <a href="{{ $settings['instagram_url'] }}" target="_blank" class="hover:text-white transition">Instagram Resmi</a>
+                            </div>
+                        @endif
+                        @if(!empty($settings['tiktok_url']))
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-brands fa-tiktok text-gray-400 w-4"></i>
+                                <a href="{{ $settings['tiktok_url'] }}" target="_blank" class="hover:text-white transition">TikTok Resmi</a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copyright -->
+            <div class="pt-8 text-center text-xs text-gray-500">
+                <p>&copy; 2026 {{ $settings['cafe_name'] ?? 'TERRA Cafe' }}. Seluruh hak cipta dilindungi.</p>
+            </div>
+        </div>
     </footer>
 
 </body>

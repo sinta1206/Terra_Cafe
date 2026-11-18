@@ -10,20 +10,22 @@ class SettingController extends Controller
 {
     public function index()
     {
-        // Mengambil semua setting dalam bentuk key => value agar mudah dipanggil di view
+        
         $settings = Setting::all()->pluck('value', 'key');
         return view('admin.settings.index', compact('settings'));
     }
 
     public function update(Request $request)
     {
-        // Menangkap field sesuai input di desain pengaturan admin
+
         $fields = [
             'cafe_name',
             'cafe_phone',
             'cafe_address',
-            'operational_hours',
-            'delivery_fee'
+            'cafe_hours',
+            'about_text',
+            'instagram_url', // Tambahan
+            'tiktok_url'     // Tambahan
         ];
 
         foreach ($fields as $field) {

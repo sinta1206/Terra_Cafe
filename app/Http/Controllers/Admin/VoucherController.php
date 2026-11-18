@@ -14,26 +14,26 @@ class VoucherController extends Controller
         return view('admin.vouchers.index', compact('vouchers'));
     }
 
-    public function create()
-    {
-        return view('admin.vouchers.create');
-    }
-
     public function store(Request $request)
     {
         $request->validate([
             'code' => 'required|string|unique:vouchers,code|max:50',
-            'value' => 'required|numeric|min:0', // Persentase diskon (%) atau nilai tetap
-            'min_purchase' => 'required|numeric|min:0', // Minimum Belanja (Rp)
+            'value' => 'required|numeric|min:0|max:100',
+            'min_purchase' => 'required|numeric|min:0',
+        ], [
+            'code.unique' => 'Kode voucher ini sudah ada!',
+            'code.required' => 'Kode voucher wajib diisi.',
+            'value.required' => 'Besar diskon wajib diisi.',
+            'min_purchase.required' => 'Minimum belanja wajib diisi.',
         ]);
 
         Voucher::create([
             'code' => strtoupper($request->code),
             'name' => 'Diskon Promo ' . strtoupper($request->code),
-            'type' => 'percent', // Sesuai desain form "Persentase Diskon (%)"
+            'type' => 'percent',
             'value' => $request->value,
             'min_purchase' => $request->min_purchase,
-            'expired_at' => now()->addMonth(), // Default masa aktif
+            'expired_at' => now()->addMonth(),
         ]);
 
         return redirect()->route('admin.vouchers.index')->with('success', 'Voucher baru berhasil dibuat.');
@@ -42,7 +42,6 @@ class VoucherController extends Controller
     public function toggleStatus($id)
     {
         $voucher = Voucher::findOrFail($id);
-        // Jika ada kolom status/aktif di database, bisa dibalik valuenya di sini
         return redirect()->back()->with('success', 'Status voucher diperbarui.');
     }
 
