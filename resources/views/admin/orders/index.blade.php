@@ -16,7 +16,7 @@
     <!-- BOX PENCARIAN & FILTER STATUS -->
     <div class="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-sm">
         <form method="GET" action="{{ route('admin.orders.index') }}" class="flex flex-col md:flex-row items-center justify-between gap-3">
-            
+
             <!-- Input Cari Invoice / Customer -->
             <div class="relative w-full md:w-80">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
@@ -62,16 +62,16 @@
                     <tr class="hover:bg-gray-50/50 transition">
                         <!-- Nomor Invoice -->
                         <td class="p-4 pl-6 font-bold text-[#2C2623]">{{ $order->invoice_number }}</td>
-                        
+
                         <!-- Nama Customer -->
                         <td class="p-4 font-medium">{{ $order->user->name ?? 'Tamu' }}</td>
-                        
+
                         <!-- Waktu -->
                         <td class="p-4 text-gray-500">{{ $order->created_at->format('H:i') }} WIB</td>
-                        
+
                         <!-- Total Harga -->
                         <td class="p-4 font-semibold text-[#2C2623]">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</td>
-                        
+
                         <!-- Status Pesanan -->
                         <td class="p-4">
                             @if($order->status == 'pending')
@@ -96,19 +96,27 @@
                         <td class="p-4">
                             @php $payStatus = optional($order->payment)->status ?? 'pending'; @endphp
                             @if($payStatus == 'success' || $payStatus == 'paid')
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">Lunas (Paid)</span>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">Paid</span>
+                            @elseif($payStatus == 'expired')
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700 uppercase">Expired</span>
+                            @elseif($payStatus == 'failed')
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-800 uppercase">Failed</span>
                             @else
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 uppercase">Belum Lunas</span>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 uppercase">Pending</span>
                             @endif
                         </td>
-                        
+
                         <!-- Tombol Aksi -->
                         <td class="p-4 pr-6 text-right space-x-1.5">
                             <a href="{{ route('admin.orders.show', $order->id) }}" class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium text-[11px] transition">
                                 Periksa
                             </a>
 
-                            @if($order->status == 'pending')
+                            @if($order->status == 'cancelled')
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold bg-red-50 text-red-600 border border-red-200">
+                                    Terkunci
+                                </span>
+                            @elseif($order->status == 'pending')
                                 <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" class="inline">
                                     @csrf
                                     @method('PATCH')

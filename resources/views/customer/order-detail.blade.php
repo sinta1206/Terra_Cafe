@@ -90,7 +90,7 @@
         <!-- KOLOM KANAN: Rincian Pembayaran & Informasi Pengiriman -->
         <div class="md:col-span-5 space-y-6">
 
-            <!-- Rincian Pembayaran -->
+           <!-- Rincian Pembayaran -->
             <div class="bg-white border border-[#EAE5DF] rounded-[24px] p-6 shadow-[0_4px_15px_rgba(44,38,35,0.03)] space-y-4 text-xs">
                 <h3 class="font-extrabold text-[#2C2623] text-sm border-b border-[#F0ECE7] pb-3">Ringkasan Transaksi</h3>
 
@@ -98,13 +98,17 @@
                     <div class="flex justify-between">
                         <span>Metode Pembayaran</span>
                         <span class="font-bold uppercase text-[#2C2623]">
-                            {{ $order->payment->payment_gateway ?? 'Tunai / QRIS / Virtual Account' }}
+                            {{ $order->payment->payment_gateway ?? 'Tunai / Midtrans' }}
                         </span>
                     </div>
                     <div class="flex justify-between">
                         <span>Status Pembayaran</span>
-                        <span class="font-bold uppercase {{ optional($order->payment)->status == 'success' || optional($order->payment)->status == 'paid' ? 'text-emerald-600' : 'text-amber-600' }}">
-                            {{ optional($order->payment)->status ?? 'Pending' }}
+                        @php $payStatus = optional($order->payment)->status ?? 'pending'; @endphp
+                        <span class="font-bold uppercase
+                            @if(in_array($payStatus, ['success', 'paid'])) text-emerald-600
+                            @elseif(in_array($payStatus, ['expired', 'failed'])) text-red-600
+                            @else text-amber-600 @endif">
+                            {{ $payStatus }}
                         </span>
                     </div>
                     <div class="flex justify-between pt-2 border-t border-[#F0ECE7]">
@@ -128,14 +132,15 @@
                     <span class="font-extrabold text-[#2C2623] text-base">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</span>
                 </div>
 
-                <!-- Jika status masih pending dan metode midtrans/qris, beri tombol lanjutkan pembayaran -->
-                @if($order->status == 'pending' && in_array(optional($order->payment)->payment_gateway, ['midtrans', 'qris']))
+                <!-- Tombol Lanjutkan Pembayaran: hanya jika belum cancelled, pembayaran masih pending, dan metode midtrans/qris -->
+                @if($order->status != 'cancelled' && optional($order->payment)->status == 'pending' && in_array(optional($order->payment)->payment_gateway, ['midtrans', 'qris']))
                     <div class="pt-2">
                         <a href="{{ route('customer.payment.qris', $order->id) }}" class="w-full block text-center py-3 bg-[#4A5342] hover:bg-[#3B4235] text-white rounded-xl font-extrabold transition text-xs shadow-sm">
                             Lanjutkan Pembayaran &rarr;
                         </a>
                     </div>
                 @endif
+            </div>
 
             <!-- Informasi Waktu & Tanggal -->
             <div class="bg-[#FAF8F5] border border-[#E5E0D8] rounded-[20px] p-5 text-xs text-gray-500 space-y-2">

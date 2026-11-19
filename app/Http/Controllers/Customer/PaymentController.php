@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Order;
 use App\Models\Payment;
 use Midtrans\Config;
-use Midtrans\Snap;
 use Midtrans\Notification;
 
 class PaymentController extends Controller
@@ -20,7 +19,6 @@ class PaymentController extends Controller
         Config::$isSanitized = config('services.midtrans.is_sanitized');
         Config::$is3ds = config('services.midtrans.is_3ds');
 
-        // Khusus pengujian di localhost jika sertifikat SSL lokal bermasalah
         if (app()->environment('local')) {
             Config::$curlOptions = [
                 CURLOPT_SSL_VERIFYPEER => false,
@@ -33,46 +31,40 @@ class PaymentController extends Controller
     {
         $order = Order::with(['payment', 'user', 'items.product'])->findOrFail($orderId);
 
-        // Jika sudah dibayar, langsung arahkan ke detail pesanan
-        if ($order->status === 'paid') {
+        // Jika sudah dibayar / sedang diproses / selesai, arahkan ke detail pesanan
+        if (in_array($order->status, ['paid', 'processing', 'completed'])) {
             return redirect()->route('customer.orders.show', $order->id);
+        }
+
+        // Jika sudah dibatalkan, arahkan ke detail pesanan tanpa membuka pembayaran baru
+        if ($order->status === 'cancelled') {
+            return redirect()->route('customer.orders.show', $order->id)
+                ->with('error', 'Pesanan ini telah dibatalkan dan tidak dapat dibayar lagi.');
         }
 
         // Batas waktu pembayaran 15 menit dari order dibuat (dalam milidetik untuk JS)
         $deadlineTimestamp = $order->created_at->copy()->addMinutes(15)->timestamp * 1000;
 
-        // Jika waktu 15 menit sudah lewat
+        // Jika waktu 15 menit sudah lewat -> batalkan pesanan & expire pembayaran, lalu hentikan
         if (now()->greaterThan($order->created_at->copy()->addMinutes(15))) {
             $order->update(['status' => 'cancelled']);
             optional($order->payment)->update(['status' => 'expired']);
+
+            return redirect()->route('customer.orders.show', $order->id)
+                ->with('error', 'Waktu pembayaran 15 menit telah habis. Pesanan otomatis dibatalkan.');
         }
 
         $this->initMidtrans();
 
-        // Gunakan order_id unik per percobaan bayar agar tidak ditolak Midtrans
         $midtransOrderId = $order->invoice_number . '-' . $order->id . '-' . time();
-
-        // 1. Periksa & amankan nilai gross_amount
         $grossAmount = max(1, (int) round($order->total_amount));
 
-        // 2. Periksa & bersihkan format nomor phone dari relasi user
         $cleanPhone = preg_replace('/[^0-9]/', '', $order->user->phone ?? '');
         if (strlen($cleanPhone) < 8) {
             $cleanPhone = '081234567890';
         }
-        $params = [
-            'transaction_details' => [
-                'order_id' => $midtransOrderId,
-                'gross_amount' => (int) round($order->total_amount),
-            ],
-            'customer_details' => [
-                'first_name' => $order->user->name ?? 'Customer',
-                'email' => $order->user->email ?? 'customer@terracafe.com',
-                'phone' => $order->user->phone ?? '081234567890',
-            ],
-        ];
 
-       $params = [
+        $params = [
             'transaction_details' => [
                 'order_id'     => $midtransOrderId,
                 'gross_amount' => $grossAmount,
@@ -86,7 +78,6 @@ class PaymentController extends Controller
             ],
         ];
 
-        // --- MULAI GANTI DARI SINI (gantikan Snap::getSnapToken($params)) ---
         $serverKey = config('services.midtrans.server_key');
         $snapUrl = config('services.midtrans.is_production')
             ? 'https://app.midtrans.com/snap/v1/transactions'
@@ -104,9 +95,9 @@ class PaymentController extends Controller
 
         if ($response->failed()) {
             dd([
-                'http_status' => $response->status(),
+                'http_status'   => $response->status(),
                 'midtrans_body' => $response->json() ?? $response->body(),
-                'params' => $params,
+                'params'        => $params,
             ]);
         }
 
@@ -114,23 +105,11 @@ class PaymentController extends Controller
 
         if (!$snapToken) {
             dd([
-                'message' => 'Token tidak ditemukan pada respons Midtrans',
+                'message'       => 'Token tidak ditemukan pada respons Midtrans',
                 'midtrans_body' => $response->json() ?? $response->body(),
             ]);
         }
-        // --- SAMPAI SINI ---
 
-        // Simpan ke kolom yang sudah ada di tabel payments
-        optional($order->payment)->update([
-            'payment_gateway'  => 'midtrans',
-            'transaction_id'   => $midtransOrderId,
-            'response_payload' => [
-                'snap_token' => $snapToken,
-            ],
-        ]);
-
-        return view('customer.payment-qris', compact('order', 'snapToken', 'deadlineTimestamp'));
-        // Simpan ke kolom yang sudah ada di tabel payments
         optional($order->payment)->update([
             'payment_gateway'  => 'midtrans',
             'transaction_id'   => $midtransOrderId,
@@ -142,7 +121,6 @@ class PaymentController extends Controller
         return view('customer.payment-qris', compact('order', 'snapToken', 'deadlineTimestamp'));
     }
 
-    // Endpoint webhook / notifikasi dari Midtrans
     public function notification(Request $request)
     {
         $this->initMidtrans();
@@ -166,14 +144,16 @@ class PaymentController extends Controller
             ),
         ]);
 
-        if ($transactionStatus == 'capture') {
-            if ($fraudStatus == 'accept') {
-                $payment->update(['status' => 'success']);
-                $order?->update(['status' => 'paid']);
-            }
-        } elseif ($transactionStatus == 'settlement') {
+        if (
+            $transactionStatus === 'settlement' ||
+            ($transactionStatus === 'capture' && $fraudStatus === 'accept')
+        ) {
             $payment->update(['status' => 'success']);
-            $order?->update(['status' => 'paid']);
+
+            // Jangan timpa jika pesanan sudah terlanjur dibatalkan/selesai
+            if ($order && !in_array($order->status, ['cancelled', 'completed'])) {
+                $order->update(['status' => 'processing']);
+            }
         } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
             $payment->update(['status' => $transactionStatus === 'expire' ? 'expired' : 'failed']);
             $order?->update(['status' => 'cancelled']);
@@ -192,7 +172,7 @@ class PaymentController extends Controller
 
         if (!$payment || !$payment->transaction_id) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Data transaksi tidak ditemukan.',
             ], 404);
         }
@@ -213,7 +193,7 @@ class PaymentController extends Controller
 
         if ($response->failed()) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Gagal mengecek status transaksi ke Midtrans.',
             ], 500);
         }
@@ -234,10 +214,13 @@ class PaymentController extends Controller
             ($transactionStatus === 'capture' && $fraudStatus === 'accept')
         ) {
             $payment->update(['status' => 'success']);
-            $order->update(['status' => 'paid']);
+
+            if (!in_array($order->status, ['cancelled', 'completed'])) {
+                $order->update(['status' => 'processing']);
+            }
 
             return response()->json([
-                'status' => 'paid',
+                'status'       => 'processing',
                 'redirect_url' => route('customer.orders.show', $order->id),
             ]);
         }
@@ -247,13 +230,13 @@ class PaymentController extends Controller
             $order->update(['status' => 'cancelled']);
 
             return response()->json([
-                'status' => 'cancelled',
+                'status'       => 'cancelled',
                 'redirect_url' => route('customer.orders.show', $order->id),
             ]);
         }
 
         return response()->json([
-            'status' => $transactionStatus ?? 'pending',
+            'status'       => $transactionStatus ?? 'pending',
             'redirect_url' => route('customer.orders.show', $order->id),
         ]);
     }
