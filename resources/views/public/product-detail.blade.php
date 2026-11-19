@@ -3,6 +3,11 @@
 @section('title', $product->name . ' - TERRA Cafe')
 
 @section('content')
+@php
+    $cleanImage = $product->image
+        ? preg_replace('#^(public/|storage/)#', '', ltrim($product->image, '/'))
+        : null;
+@endphp
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
     <!-- Tombol Kembali -->
@@ -16,8 +21,8 @@
 
         <!-- Gambar Produk -->
         <div class="h-72 sm:h-96 bg-gray-100 rounded-2xl overflow-hidden flex items-center justify-center text-gray-400">
-            @if($product->image)
-                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+            @if($cleanImage)
+                <img src="{{ asset('storage/' . $cleanImage) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
             @else
                 <span>Foto Produk</span>
             @endif

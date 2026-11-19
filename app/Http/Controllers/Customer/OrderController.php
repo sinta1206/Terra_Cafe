@@ -32,14 +32,17 @@ class OrderController extends Controller
     // Fitur "Pesan lagi" untuk memasukkan ulang item pesanan lama ke keranjang
     public function reorder($id)
     {
-        $order = Order::with('items')->where('user_id', auth()->id())->findOrFail($id);
+        $order = Order::with('items.product')->where('user_id', auth()->id())->findOrFail($id);
         $cart = Cart::firstOrCreate(['user_id' => auth()->id()]);
 
         foreach ($order->items as $item) {
+            $price = $item->price > 0 ? $item->price : ($item->product->price ?? 0);
+
             CartItem::create([
                 'cart_id' => $cart->id,
                 'product_id' => $item->product_id,
                 'quantity' => $item->quantity,
+                'price' => $price,
                 'note' => $item->note,
             ]);
         }

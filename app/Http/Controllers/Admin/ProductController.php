@@ -14,7 +14,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::with('category');
-        
+
         // Fitur cari produk sesuai input di desain
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -26,7 +26,7 @@ class ProductController extends Controller
         }
 
         $products = $query->latest()->paginate(12);
-        $categories = Category::all(); // Mengambil data kategori untuk dropdown filter di view
+        $categories = Category::all();
 
         return view('admin.products.index', compact('products', 'categories'));
     }
@@ -44,7 +44,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255|unique:products,name',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'description' => 'nullable|string',
         ], [
             'name.unique' => 'Nama produk ini sudah ada! Silakan gunakan nama lain.',
@@ -58,10 +58,9 @@ class ProductController extends Controller
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('products', 'public');
         }
-        
 
-        $stock = $request->stock;
-        $isActive = $stock > 0 ? true : false;
+        $stock = (int) $request->stock;
+        $isActive = $stock > 0;
 
         Product::create([
             'category_id' => $request->category_id,
@@ -77,9 +76,6 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
-    // ==========================================
-    // TAMBAHAN: Method Edit & Update Produk
-    // ==========================================
     public function edit($id)
     {
         $product = Product::findOrFail($id);
@@ -93,10 +89,10 @@ class ProductController extends Controller
 
         $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'name' => 'required|string|max:255|unique:products,name,' . $product->id, // Mengabaikan nama produk ini sendiri saat validasi unique
+            'name' => 'required|string|max:255|unique:products,name,' . $product->id,
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'description' => 'nullable|string',
         ], [
             'name.unique' => 'Nama produk ini sudah ada! Silakan gunakan nama lain.',
@@ -108,13 +104,14 @@ class ProductController extends Controller
 
         $imagePath = $product->image;
         if ($request->hasFile('image')) {
-            if ($product->image && Storage::disk('public')->exists($product->image)) {
-                Storage::disk('public')->delete($product->image);
+            $oldCleanPath = $this->normalizeImagePath($product->image);
+            if ($oldCleanPath && Storage::disk('public')->exists($oldCleanPath)) {
+                Storage::disk('public')->delete($oldCleanPath);
             }
             $imagePath = $request->file('image')->store('products', 'public');
         }
 
-        $stock = $request->stock;
+        $stock = (int) $request->stock;
         $isActive = $stock > 0 ? $product->is_active : false;
 
         $product->update([
@@ -131,7 +128,6 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')->with('success', 'Produk berhasil diperbarui.');
     }
 
-    // Toggle status Aktif / Off / Habis langsung dari tombol kelola produk
     public function toggleStatus($id)
     {
         $product = Product::findOrFail($id);
@@ -144,11 +140,22 @@ class ProductController extends Controller
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
-        if ($product->image && Storage::disk('public')->exists($product->image)) {
-            Storage::disk('public')->delete($product->image);
+        $cleanPath = $this->normalizeImagePath($product->image);
+        if ($cleanPath && Storage::disk('public')->exists($cleanPath)) {
+            Storage::disk('public')->delete($cleanPath);
         }
         $product->delete();
 
         return redirect()->route('admin.products.index')->with('success', 'Produk berhasil dihapus.');
+    }
+
+    private function normalizeImagePath(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        $clean = preg_replace('#^(public/|storage/)#', '', ltrim($path, '/'));
+        return $clean !== '' ? $clean : null;
     }
 }

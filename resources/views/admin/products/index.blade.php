@@ -52,13 +52,18 @@
     <!-- GRID KARTU PRODUK -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($products as $product)
+            @php
+                $cleanImage = $product->image
+                    ? preg_replace('#^(public/|storage/)#', '', ltrim($product->image, '/'))
+                    : null;
+            @endphp
             <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden flex flex-col justify-between transition hover:shadow-md">
                 
                 <div>
                     <!-- Gambar & Badge Status -->
                     <div class="relative h-48 bg-gray-100 overflow-hidden">
-                        @if($product->image)
-                            <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                        @if($cleanImage)
+                            <img src="{{ asset('storage/' . $cleanImage) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
                         @else
                             <div class="w-full h-full flex items-center justify-center text-gray-400">
                                 <i class="fa-solid fa-mug-hot text-3xl"></i>

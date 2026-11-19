@@ -32,13 +32,18 @@
         <!-- Grid Produk di Dalam Kontainer -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             @forelse($products as $product)
+                @php
+                    $cleanImage = $product->image
+                        ? preg_replace('#^(public/|storage/)#', '', ltrim($product->image, '/'))
+                        : null;
+                @endphp
                 <div class="bg-[#FAF8F5] border border-[#EAE5DF] rounded-[20px] p-4 transition-all duration-300 hover:shadow-sm flex flex-col justify-between relative">
                     
                     <div>
                         <!-- Foto Produk & Tombol Favorit -->
                         <div class="h-44 bg-[#F5F2EE] border border-[#F0ECE7] rounded-[16px] mb-4 overflow-hidden flex items-center justify-center relative">
-                            @if($product->image)
-                                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                            @if($cleanImage)
+                                <img src="{{ asset('storage/' . $cleanImage) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
                             @else
                                 <i class="fa-solid fa-mug-hot text-[#C9B49B] text-xl"></i>
                             @endif
@@ -47,7 +52,6 @@
                             @auth
                                 @if(auth()->user()->role === 'customer')
                                     @php
-                                        // Cek apakah produk ini sudah difavoritkan oleh user yang sedang login
                                         $isFavorite = auth()->user()->favorites()->where('product_id', $product->id)->exists();
                                     @endphp
                                     <form action="{{ route('customer.favorites.toggle', $product->id) }}" method="POST" class="absolute top-3 right-3">

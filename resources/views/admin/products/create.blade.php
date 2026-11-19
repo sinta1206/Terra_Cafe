@@ -23,7 +23,6 @@
             <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Nama Produk</label>
             <input type="text" name="name" value="{{ old('name') }}" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-black">
             
-            <!-- Pesan Error Jika Nama Produk Sudah Ada -->
             @error('name')
                 <p class="text-red-500 text-xs mt-1 font-medium">{{ $message }}</p>
             @enderror
@@ -56,7 +55,7 @@
 
         <div>
             <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Foto Produk</label>
-            <input type="file" name="image" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-900 file:text-white">
+            <input type="file" name="image" accept="image/jpeg,image/png,image/jpg,image/webp" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-900 file:text-white">
             @error('image')
                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
             @enderror
