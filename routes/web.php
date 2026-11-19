@@ -77,6 +77,7 @@ Route::middleware(['auth'])->prefix('customer')->name('customer.')->group(functi
         // Dashboard & Detail Produk Pelanggan
         Route::get('/dashboard', [CustomerDashboardController::class, 'index'])->name('dashboard');
         Route::get('/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
+        Route::post('/products/{productId}/buy-now', [CartController::class, 'buyNow'])->name('products.buy-now');
 
         // Keranjang Belanja (Cart) & Voucher
         Route::get('/cart', [CartController::class, 'index'])->name('cart');

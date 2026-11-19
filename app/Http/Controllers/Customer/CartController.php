@@ -19,7 +19,29 @@ class CartController extends Controller
 
     public function add(Request $request, $productId)
     {
-        $request->validate([
+        $result = $this->storeCartItem($request, (int) $productId);
+
+        if (!$result['ok']) {
+            return redirect()->back()->withInput()->with('error', $result['message']);
+        }
+
+        return redirect()->route('customer.cart')->with('success', 'Produk berhasil ditambahkan ke keranjang!');
+    }
+
+    public function buyNow(Request $request, $productId)
+    {
+        $result = $this->storeCartItem($request, (int) $productId);
+
+        if (!$result['ok']) {
+            return redirect()->back()->withInput()->with('error', $result['message']);
+        }
+
+        return redirect()->route('customer.checkout');
+    }
+
+    private function storeCartItem(Request $request, int $productId): array
+    {
+        $validated = $request->validate([
             'quantity' => 'required|integer|min:1',
             'temperature' => 'nullable|string',
             'size' => 'nullable|string',
@@ -29,25 +51,27 @@ class CartController extends Controller
         $product = Product::findOrFail($productId);
 
         if (!$product->is_active || $product->stock <= 0) {
-            return redirect()->back()->with('error', 'Maaf, produk ini sedang habis atau tidak aktif.');
+            return [
+                'ok' => false,
+                'message' => 'Maaf, produk ini sedang habis atau tidak aktif.',
+            ];
         }
 
         $cart = Cart::firstOrCreate(['user_id' => auth()->id()]);
         $cart->load('items');
 
-        // Hitung total kuantitas produk ini yang sudah ada di keranjang + yang baru ditambah
         $existingQty = $cart->items->where('product_id', $product->id)->sum('quantity');
-        $totalRequestedQty = $existingQty + $request->quantity;
+        $totalRequestedQty = $existingQty + (int) $validated['quantity'];
 
         if ($totalRequestedQty > $product->stock) {
-            return redirect()->back()->with(
-                'error',
-                "Stok '{$product->name}' hanya tersisa {$product->stock} item (di keranjang sudah ada {$existingQty})."
-            );
+            return [
+                'ok' => false,
+                'message' => "Stok '{$product->name}' hanya tersisa {$product->stock} item (di keranjang sudah ada {$existingQty}).",
+            ];
         }
 
         $finalPrice = $product->price;
-        $sizeInput = (string) $request->input('size', '');
+        $sizeInput = (string) ($validated['size'] ?? '');
 
         if (stripos($sizeInput, 'large') !== false || stripos($sizeInput, 'besar') !== false) {
             $finalPrice += 3000;
@@ -55,13 +79,13 @@ class CartController extends Controller
 
         CartItem::create([
             'cart_id' => $cart->id,
-            'product_id' => $productId,
-            'quantity' => $request->quantity,
+            'product_id' => $product->id,
+            'quantity' => (int) $validated['quantity'],
             'price' => $finalPrice,
-            'note' => 'Suhu: ' . ($request->temperature ?? '-') . ', Ukuran: ' . ($request->size ?? 'Regular') . '. Catatan: ' . ($request->note ?: '-'),
+            'note' => 'Suhu: ' . ($validated['temperature'] ?? '-') . ', Ukuran: ' . ($validated['size'] ?? 'Regular') . '. Catatan: ' . (($validated['note'] ?? '') ?: '-'),
         ]);
 
-        return redirect()->route('customer.cart')->with('success', 'Produk berhasil ditambahkan ke keranjang!');
+        return ['ok' => true];
     }
 
     public function updateQuantity(Request $request, $itemId)
@@ -83,7 +107,6 @@ class CartController extends Controller
             return redirect()->route('customer.cart')->with('error', "Produk '{$product->name}' sedang habis.");
         }
 
-        // Hitung total kuantitas produk ini di keranjang jika item ini diubah jadi $request->quantity
         $otherItemsQty = $item->cart->items
             ->where('product_id', $product->id)
             ->where('id', '!=', $item->id)
