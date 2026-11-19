@@ -90,15 +90,37 @@
     updateCountdown();
     const timerInterval = setInterval(updateCountdown, 1000);
 
+    // Tambahan: fungsi verifikasi status pembayaran ke backend sebelum pindah halaman
+    function verifyPaymentThenRedirect() {
+        payButton.disabled = true;
+        payButton.textContent = "Memverifikasi Pembayaran...";
+
+        fetch("{{ route('customer.payment.verify', $order->id) }}", {
+            method: "POST",
+            headers: {
+                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            window.location.href = data.redirect_url || "{{ route('customer.orders.show', $order->id) }}";
+        })
+        .catch(() => {
+            window.location.href = "{{ route('customer.orders.show', $order->id) }}";
+        });
+    }
+
     payButton.addEventListener('click', function () {
         if (Date.now() >= deadline) return;
 
         window.snap.pay('{{ $snapToken }}', {
             onSuccess: function (result) {
-                window.location.href = "{{ route('customer.orders.show', $order->id) }}";
+                verifyPaymentThenRedirect();
             },
             onPending: function (result) {
-                window.location.href = "{{ route('customer.orders.show', $order->id) }}";
+                verifyPaymentThenRedirect();
             },
             onError: function (result) {
                 alert('Pembayaran gagal diproses. Silakan coba lagi.');

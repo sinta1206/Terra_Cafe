@@ -66,14 +66,14 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 // 3. ROUTE CUSTOMER (Khusus Peran Customer)
 // ==========================================
 Route::middleware(['auth'])->prefix('customer')->name('customer.')->group(function () {
-    
+
     Route::group(['middleware' => function ($request, $next) {
         if (auth()->check() && auth()->user()->role !== 'customer') {
             abort(403, 'Akses khusus pelanggan.');
         }
         return $next($request);
     }], function () {
-        
+
         // Dashboard & Detail Produk Pelanggan
         Route::get('/dashboard', [CustomerDashboardController::class, 'index'])->name('dashboard');
         Route::get('/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
@@ -90,6 +90,7 @@ Route::middleware(['auth'])->prefix('customer')->name('customer.')->group(functi
         Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
 
         Route::get('/payment/qris/{orderId}', [PaymentController::class, 'showQris'])->name('payment.qris');
+        Route::post('/payment/verify/{orderId}', [PaymentController::class, 'verifyStatus'])->name('payment.verify');
         Route::post('/payment/qris/confirm/{orderId}', [PaymentController::class, 'confirmQris'])->name('payment.qris.confirm');
         Route::get('/payment/cash/{orderId}', [PaymentController::class, 'showCash'])->name('payment.cash');
 
@@ -123,15 +124,15 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         }
         return $next($request);
     }], function () {
-        
+
         // Dashboard Admin
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         // Kelola Kategori & Produk
         Route::resource('categories', AdminCategoryController::class)->except(['show', 'edit', 'update']);
-        
+
         Route::resource('products', AdminProductController::class)->except(['show']);
-       
+
         Route::patch('/products/{id}/toggle-status', [AdminProductController::class, 'toggleStatus'])->name('products.toggle');
 
         // Kelola Pesanan Masuk

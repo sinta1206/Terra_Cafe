@@ -181,4 +181,80 @@ class PaymentController extends Controller
 
         return response()->json(['message' => 'OK']);
     }
+
+    public function verifyStatus($orderId)
+    {
+        $order = Order::with('payment')
+            ->where('user_id', auth()->id())
+            ->findOrFail($orderId);
+
+        $payment = $order->payment;
+
+        if (!$payment || !$payment->transaction_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data transaksi tidak ditemukan.',
+            ], 404);
+        }
+
+        $serverKey = config('services.midtrans.server_key');
+        $statusUrl = config('services.midtrans.is_production')
+            ? "https://api.midtrans.com/v2/{$payment->transaction_id}/status"
+            : "https://api.sandbox.midtrans.com/v2/{$payment->transaction_id}/status";
+
+        $http = Http::withBasicAuth($serverKey, '')
+            ->acceptJson();
+
+        if (app()->environment('local')) {
+            $http = $http->withoutVerifying();
+        }
+
+        $response = $http->get($statusUrl);
+
+        if ($response->failed()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengecek status transaksi ke Midtrans.',
+            ], 500);
+        }
+
+        $data = $response->json();
+        $transactionStatus = $data['transaction_status'] ?? null;
+        $fraudStatus = $data['fraud_status'] ?? null;
+
+        $payment->update([
+            'response_payload' => array_merge(
+                is_array($payment->response_payload) ? $payment->response_payload : [],
+                ['status_check' => $data]
+            ),
+        ]);
+
+        if (
+            $transactionStatus === 'settlement' ||
+            ($transactionStatus === 'capture' && $fraudStatus === 'accept')
+        ) {
+            $payment->update(['status' => 'success']);
+            $order->update(['status' => 'paid']);
+
+            return response()->json([
+                'status' => 'paid',
+                'redirect_url' => route('customer.orders.show', $order->id),
+            ]);
+        }
+
+        if (in_array($transactionStatus, ['expire', 'cancel', 'deny'])) {
+            $payment->update(['status' => $transactionStatus === 'expire' ? 'expired' : 'failed']);
+            $order->update(['status' => 'cancelled']);
+
+            return response()->json([
+                'status' => 'cancelled',
+                'redirect_url' => route('customer.orders.show', $order->id),
+            ]);
+        }
+
+        return response()->json([
+            'status' => $transactionStatus ?? 'pending',
+            'redirect_url' => route('customer.orders.show', $order->id),
+        ]);
+    }
 }
