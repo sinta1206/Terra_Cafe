@@ -25,16 +25,16 @@
         <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-sm flex flex-col justify-between">
             <span class="text-xs text-gray-500 font-medium">Total pesanan</span>
             <div class="my-3">
-                <h3 class="text-3xl font-bold text-[#2C2623]">{{ $totalOrders ?? 24 }}</h3>
+                <h3 class="text-3xl font-bold text-[#2C2623]">{{ $totalAllOrders ?? 0 }}</h3>
             </div>
-            <span class="text-[11px] text-gray-400">Transaksi hari ini</span>
+            <span class="text-[11px] text-gray-400">{{ $totalOrdersToday ?? 0 }} transaksi hari ini</span>
         </div>
 
         <!-- Menunggu Konfirmasi -->
         <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-sm flex flex-col justify-between">
             <span class="text-xs text-gray-500 font-medium">Menunggu konfirmasi</span>
             <div class="my-3">
-                <h3 class="text-3xl font-bold text-amber-600">{{ $pendingOrdersCount ?? 3 }}</h3>
+                <h3 class="text-3xl font-bold text-amber-600">{{ $pendingOrdersCount ?? 0 }}</h3>
             </div>
             <span class="text-[11px] text-amber-600/80 font-medium">Perlu ditindaklanjuti</span>
         </div>
@@ -43,16 +43,16 @@
         <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-sm flex flex-col justify-between">
             <span class="text-xs text-gray-500 font-medium">Pemasukan</span>
             <div class="my-3">
-                <h3 class="text-2xl font-bold text-[#2C2623]">Rp {{ number_format($totalRevenue ?? 842000, 0, ',', '.') }}</h3>
+                <h3 class="text-2xl font-bold text-[#2C2623]">Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}</h3>
             </div>
-            <span class="text-[11px] text-gray-400">Dari 21 pesanan selesai</span>
+            <span class="text-[11px] text-gray-400">Dari {{ $completedOrdersCount ?? 0 }} pesanan selesai</span>
         </div>
 
         <!-- Stok Menipis -->
         <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-sm flex flex-col justify-between">
             <span class="text-xs text-gray-500 font-medium">Stok menipis</span>
             <div class="my-3">
-                <h3 class="text-3xl font-bold text-red-600">{{ $lowStockCount ?? 1 }}</h3>
+                <h3 class="text-3xl font-bold text-red-600">{{ $lowStockCount ?? 0 }}</h3>
             </div>
             <span class="text-[11px] text-red-500 font-medium">Perlu diperiksa</span>
         </div>
@@ -69,7 +69,7 @@
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                        <th class="py-3 px-6">Pesanan</th>
+                        <th class="py-3 px-6">Invoice</th>
                         <th class="py-3 px-6">Customer</th>
                         <th class="py-3 px-6">Waktu</th>
                         <th class="py-3 px-6">Total</th>
@@ -77,36 +77,28 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50 text-sm">
-                    @forelse($recentOrders ?? [] as $order)
+                    @forelse($latestOrders ?? [] as $order)
                         <tr class="hover:bg-gray-50/50 transition">
-                            <td class="py-4 px-6 font-medium text-[#2C2623]">#{{ $order->code ?? 'TR-8821' }}</td>
-                            <td class="py-4 px-6 text-gray-600">{{ $order->user->name ?? 'Aditya Pratama' }}</td>
-                            <td class="py-4 px-6 text-gray-500 text-xs">{{ $order->created_at ? $order->created_at->format('H:i') . ' WIB' : '10:15 WIB' }}</td>
-                            <td class="py-4 px-6 font-medium text-[#2C2623]">Rp {{ number_format($order->total_price ?? 59000, 0, ',', '.') }}</td>
+                            <td class="py-4 px-6 font-medium text-[#2C2623]">{{ $order->invoice_number }}</td>
+                            <td class="py-4 px-6 text-gray-600">{{ $order->user->name ?? 'Tamu' }}</td>
+                            <td class="py-4 px-6 text-gray-500 text-xs">{{ $order->created_at ? $order->created_at->format('H:i') . ' WIB' : '-' }}</td>
+                            <td class="py-4 px-6 font-medium text-[#2C2623]">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</td>
                             <td class="py-4 px-6">
-                                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                                    Diproses
-                                </span>
+                                @if($order->status == 'pending')
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Pending</span>
+                                @elseif($order->status == 'processing')
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Processing</span>
+                                @elseif($order->status == 'completed')
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Completed</span>
+                                @else
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">Cancelled</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
-                        <!-- Data Contoh Sesuai Gambar Jika Belum Ada Pesanan -->
-                        <tr class="hover:bg-gray-50/50 transition">
-                            <td class="py-4 px-6 font-medium text-[#2C2623]">#TR-8821</td>
-                            <td class="py-4 px-6 text-gray-600">Aditya Pratama</td>
-                            <td class="py-4 px-6 text-gray-500 text-xs">10:15 WIB</td>
-                            <td class="py-4 px-6 font-medium text-[#2C2623]">Rp 59.000</td>
-                            <td class="py-4 px-6">
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">Diproses</span>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50/50 transition">
-                            <td class="py-4 px-6 font-medium text-[#2C2623]">#TR-8820</td>
-                            <td class="py-4 px-6 text-gray-600">Siti Rahma</td>
-                            <td class="py-4 px-6 text-gray-500 text-xs">09:40 WIB</td>
-                            <td class="py-4 px-6 font-medium text-[#2C2623]">Rp 35.000</td>
-                            <td class="py-4 px-6">
-                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">Selesai</span>
+                        <tr>
+                            <td colspan="5" class="py-8 px-6 text-center text-xs text-gray-400">
+                                Belum ada pesanan terbaru.
                             </td>
                         </tr>
                     @endforelse
@@ -137,12 +129,20 @@
         <!-- Stok Perlu Perhatian -->
         <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-sm">
             <h3 class="font-bold text-[#2C2623] text-sm mb-4">Stok perlu perhatian</h3>
-            <div class="bg-red-50/60 border border-red-100 rounded-xl p-3.5 flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-mug-hot text-red-400 text-sm"></i>
-                    <span class="text-xs font-medium text-gray-800">Chicken Katsu Rice</span>
-                </div>
-                <span class="text-xs font-bold text-red-600 bg-white px-2.5 py-1 rounded-lg border border-red-100 shadow-2xs">3 tersisa</span>
+            <div class="space-y-2.5">
+                @forelse($lowStockProducts ?? [] as $product)
+                    <div class="bg-red-50/60 border border-red-100 rounded-xl p-3.5 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-mug-hot text-red-400 text-sm"></i>
+                            <span class="text-xs font-medium text-gray-800">{{ $product->name }}</span>
+                        </div>
+                        <span class="text-xs font-bold text-red-600 bg-white px-2.5 py-1 rounded-lg border border-red-100 shadow-2xs">
+                            {{ $product->stock }} tersisa
+                        </span>
+                    </div>
+                @empty
+                    <p class="text-xs text-gray-400">Semua stok produk masih aman.</p>
+                @endforelse
             </div>
         </div>
 

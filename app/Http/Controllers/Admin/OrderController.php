@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
+use App\Models\Product;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -13,17 +15,16 @@ class OrderController extends Controller
         $query = Order::with('user', 'items.product', 'payment');
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('invoice_number', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($userQuery) use ($search) {
-                      $userQuery->where('name', 'like', "%{$search}%");
+            $search =$request->search;
+            $query->where('invoice_number', 'like', "\%{$search}%")
+                  ->orWhereHas('user', function($q) use ($search) {
+                      $q->where('name', 'like', "\%{$search}%");
                   });
-            });
         }
 
-        if ($request->filled('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
+        // Filter berdasarkan status pesanan
+        if ($request->filled('status') &&$request->status !== 'all') {
+            $query->where('status',$request->status);
         }
 
         $orders = $query->latest()->paginate(10);
@@ -36,27 +37,16 @@ class OrderController extends Controller
         return view('admin.orders.show', compact('order'));
     }
 
-    // Aksi tombol ubah status proses pesanan (pending/paid/processing/completed/cancelled)
-    public function updateStatus(Request $request, $id)
+    // Aksi tombol ubah status proses pesanan (pending/processing/completed/cancelled)
+    public function updateStatus(Request $request,$id)
     {
-        $order = Order::with('payment')->findOrFail($id);
-
-        // Kunci: jika pesanan sudah cancelled, admin tidak boleh mengubahnya lagi
-        if ($order->status === 'cancelled') {
-            return redirect()->back()
-                ->with('error', 'Pesanan #' . $order->invoice_number . ' sudah dibatalkan dan tidak dapat diubah lagi.');
-        }
+        $order = Order::findOrFail($id);
 
         $request->validate([
-            'status' => 'required|in:pending,paid,processing,completed,cancelled',
+            'status' => 'required|in:pending,processing,completed,cancelled',
         ]);
 
-        // Jika admin menandai pembayaran tunai lunas bersamaan atau pesanan diproses dari pending (cash)
-        if ($request->status === 'completed' && optional($order->payment)->payment_gateway === 'cash' && optional($order->payment)->status === 'pending') {
-            $order->payment->update(['status' => 'success']);
-        }
-
-        $order->update(['status' => $request->status]);
+        $order->update(['status' =>$request->status]);
 
         return redirect()->back()
             ->with('success', 'Status pesanan #' . $order->invoice_number . ' berhasil diperbarui.');
@@ -67,18 +57,7 @@ class OrderController extends Controller
     {
         $order = Order::with('payment')->findOrFail($id);
 
-        if ($order->status === 'cancelled') {
-            return redirect()->back()
-                ->with('error', 'Pesanan sudah dibatalkan, status pembayaran tidak dapat diubah.');
-        }
-
-        if ($order->payment) {
-            $order->payment->update(['status' => 'success']);
-        }
-
-        // Jika pesanan masih pending setelah bayar di kasir, otomatis masuk ke processing
-        if ($order->status === 'pending') {
-            $order->update(['status' => 'processing']);
+        if ($order->payment) {$order->payment->update(['status' => 'success']); // atau 'paid'
         }
 
         return redirect()->back()

@@ -20,6 +20,12 @@
             <a href="{{ route('register') }}" class="flex-1 py-2 text-center text-sm font-medium text-gray-500 hover:text-gray-900">Daftar</a>
         </div>
 
+        @if(session('success'))
+            <div class="mb-4 p-3 bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm rounded-lg">
+                {{ session('success') }}
+            </div>
+        @endif
+
         @if($errors->any())
             <div class="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg">
                 {{ $errors->first() }}

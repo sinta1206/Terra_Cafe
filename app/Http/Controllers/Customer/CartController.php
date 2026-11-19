@@ -28,14 +28,30 @@ class CartController extends Controller
 
         $product = Product::findOrFail($productId);
 
+        if (!$product->is_active || $product->stock <= 0) {
+            return redirect()->back()->with('error', 'Maaf, produk ini sedang habis atau tidak aktif.');
+        }
+
+        $cart = Cart::firstOrCreate(['user_id' => auth()->id()]);
+        $cart->load('items');
+
+        // Hitung total kuantitas produk ini yang sudah ada di keranjang + yang baru ditambah
+        $existingQty = $cart->items->where('product_id', $product->id)->sum('quantity');
+        $totalRequestedQty = $existingQty + $request->quantity;
+
+        if ($totalRequestedQty > $product->stock) {
+            return redirect()->back()->with(
+                'error',
+                "Stok '{$product->name}' hanya tersisa {$product->stock} item (di keranjang sudah ada {$existingQty})."
+            );
+        }
+
         $finalPrice = $product->price;
         $sizeInput = (string) $request->input('size', '');
 
         if (stripos($sizeInput, 'large') !== false || stripos($sizeInput, 'besar') !== false) {
             $finalPrice += 3000;
         }
-
-        $cart = Cart::firstOrCreate(['user_id' => auth()->id()]);
 
         CartItem::create([
             'cart_id' => $cart->id,
@@ -50,11 +66,34 @@ class CartController extends Controller
 
     public function updateQuantity(Request $request, $itemId)
     {
-        $item = CartItem::findOrFail($itemId);
-        
+        $request->validate([
+            'quantity' => 'required|integer',
+        ]);
+
+        $item = CartItem::with('cart.items', 'product')->findOrFail($itemId);
+
         if ($request->quantity <= 0) {
             $item->delete();
             return redirect()->route('customer.cart')->with('success', 'Produk berhasil dihapus dari keranjang.');
+        }
+
+        $product = Product::findOrFail($item->product_id);
+
+        if (!$product->is_active || $product->stock <= 0) {
+            return redirect()->route('customer.cart')->with('error', "Produk '{$product->name}' sedang habis.");
+        }
+
+        // Hitung total kuantitas produk ini di keranjang jika item ini diubah jadi $request->quantity
+        $otherItemsQty = $item->cart->items
+            ->where('product_id', $product->id)
+            ->where('id', '!=', $item->id)
+            ->sum('quantity');
+
+        if ($otherItemsQty + $request->quantity > $product->stock) {
+            return redirect()->route('customer.cart')->with(
+                'error',
+                "Jumlah melebihi stok tersedia untuk '{$product->name}' (maksimal stok: {$product->stock})."
+            );
         }
 
         $item->quantity = $request->quantity;
