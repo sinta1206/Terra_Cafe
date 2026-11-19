@@ -30,10 +30,10 @@
 
     <!-- Layout Dua Kolom -->
     <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-        
+
         <!-- KOLOM KIRI: Daftar Item & Catatan -->
         <div class="md:col-span-7 space-y-6">
-            
+
             <!-- Daftar Menu yang Dipesan -->
             <div class="bg-white border border-[#EAE5DF] rounded-[24px] p-6 shadow-[0_4px_15px_rgba(44,38,35,0.03)] space-y-4">
                 <h3 class="font-extrabold text-[#2C2623] text-sm uppercase tracking-wider border-b border-[#F0ECE7] pb-3 flex items-center gap-2">
@@ -89,7 +89,7 @@
 
         <!-- KOLOM KANAN: Rincian Pembayaran & Informasi Pengiriman -->
         <div class="md:col-span-5 space-y-6">
-            
+
             <!-- Rincian Pembayaran -->
             <div class="bg-white border border-[#EAE5DF] rounded-[24px] p-6 shadow-[0_4px_15px_rgba(44,38,35,0.03)] space-y-4 text-xs">
                 <h3 class="font-extrabold text-[#2C2623] text-sm border-b border-[#F0ECE7] pb-3">Ringkasan Transaksi</h3>
@@ -98,7 +98,7 @@
                     <div class="flex justify-between">
                         <span>Metode Pembayaran</span>
                         <span class="font-bold uppercase text-[#2C2623]">
-                            {{ $order->payment->payment_gateway ?? 'Tunai / QRIS' }}
+                            {{ $order->payment->payment_gateway ?? 'Tunai / QRIS / Virtual Account' }}
                         </span>
                     </div>
                     <div class="flex justify-between">
@@ -128,15 +128,14 @@
                     <span class="font-extrabold text-[#2C2623] text-base">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</span>
                 </div>
 
-                <!-- Jika status masih pending dan metode qris, beri tombol bayar ulang -->
-                @if($order->status == 'pending' && optional($order->payment)->payment_gateway == 'qris')
+                <!-- Jika status masih pending dan metode midtrans/qris, beri tombol lanjutkan pembayaran -->
+                @if($order->status == 'pending' && in_array(optional($order->payment)->payment_gateway, ['midtrans', 'qris']))
                     <div class="pt-2">
                         <a href="{{ route('customer.payment.qris', $order->id) }}" class="w-full block text-center py-3 bg-[#4A5342] hover:bg-[#3B4235] text-white rounded-xl font-extrabold transition text-xs shadow-sm">
-                            Selesaikan Pembayaran QRIS &rarr;
+                            Lanjutkan Pembayaran &rarr;
                         </a>
                     </div>
                 @endif
-            </div>
 
             <!-- Informasi Waktu & Tanggal -->
             <div class="bg-[#FAF8F5] border border-[#E5E0D8] rounded-[20px] p-5 text-xs text-gray-500 space-y-2">

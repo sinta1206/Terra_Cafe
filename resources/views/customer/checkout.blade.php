@@ -74,7 +74,7 @@
                 <label class="flex items-center space-x-3 border border-[#E5E0D8] bg-[#FAF8F5] p-4 rounded-xl cursor-pointer hover:border-[#2C2623]">
                     <input type="radio" name="payment_method" value="qris" checked class="accent-[#2C2623]">
                     <div>
-                        <span class="font-extrabold text-[#2C2623] text-sm block">QRIS (Scan & Bayar)</span>
+                        <span class="font-extrabold text-[#2C2623] text-sm block">Pembayaran Online (QRIS / Virtual Account)</span>
                         <span class="text-gray-500">Bayar instan via GoPay, OVO, Dana, M-Banking</span>
                     </div>
                 </label>
@@ -99,7 +99,7 @@ function updateCheckoutSummary() {
     const selectedType = document.querySelector('input[name="order_type"]:checked').value;
     const subtotal = parseInt(document.getElementById('subtotal-val').getAttribute('data-subtotal')) || 0;
     const discount = parseInt(document.getElementById('discount-val').getAttribute('data-discount')) || 0;
-    
+
     let shippingFee = 10000;
     if (selectedType === 'take_away' || selectedType === 'dine_in') {
         shippingFee = 0;

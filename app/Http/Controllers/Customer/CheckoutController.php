@@ -74,7 +74,7 @@ class CheckoutController extends Controller
 
         foreach ($cart->items as $item) {
             $itemFinalPrice = $item->price > 0 ? $item->price : ($item->product->price + (str_contains($item->note, 'Large') ? 3000 : 0));
-            
+
             OrderItem::create([
                 'order_id' => $order->id,
                 'product_id' => $item->product_id,
@@ -86,23 +86,21 @@ class CheckoutController extends Controller
 
         // Catat Pembayaran
         Payment::create([
-            'order_id' => $order->id,
-            'payment_gateway' => $request->payment_method,
-            'amount' => $totalAmount,
-            'status' => 'pending',
+            'order_id'        => $order->id,
+            'payment_gateway' => $request->payment_method, // 'cash' atau 'qris' / 'midtrans'
+            'amount'          => $totalAmount,
+            'status'          => 'pending',
         ]);
-
-        // Hapus session voucher setelah checkout berhasil
-        session()->forget(['applied_voucher', 'voucher_discount']);
 
         // Kosongkan keranjang
         $cart->items()->delete();
 
-        // Arahkan ke halaman pembayaran berdasarkan metode yang dipilih
-        if ($request->payment_method === 'qris') {
+        if (in_array($request->payment_method, ['qris', 'midtrans'])) {
             return redirect()->route('customer.payment.qris', $order->id);
         }
 
-        return redirect()->route('customer.payment.cash', $order->id);
+        // Jika 'cash' (Tunai di Kasir), arahkan langsung ke halaman pesanan / detail pesanan
+        return redirect()->route('customer.orders.show', $order->id)
+            ->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran tunai di kasir.');
     }
 }
