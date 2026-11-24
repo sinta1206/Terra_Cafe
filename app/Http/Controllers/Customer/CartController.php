@@ -48,7 +48,7 @@ class CartController extends Controller
             'note' => 'nullable|string',
         ]);
 
-        $product = Product::findOrFail($productId);
+        $product = Product::with('category')->findOrFail($productId);
 
         if (!$product->is_active || $product->stock <= 0) {
             return [
@@ -70,19 +70,30 @@ class CartController extends Controller
             ];
         }
 
-        $finalPrice = $product->price;
-        $sizeInput = (string) ($validated['size'] ?? '');
+        $categoryText = strtolower(($product->category->name ?? '') . ' ' . ($product->category->slug ?? ''));
+        $isDrink = (bool) preg_match('/\b(minuman|drink|drinks|beverage|beverages|kopi|coffee|tea|teh|matcha|latte|juice|jus|mocktail|milk)\b/', $categoryText);
 
-        if (stripos($sizeInput, 'large') !== false || stripos($sizeInput, 'besar') !== false) {
-            $finalPrice += 3000;
+        $finalPrice = $product->price;
+        $noteParts = [];
+
+        if ($isDrink) {
+            $sizeInput = (string) ($validated['size'] ?? 'Regular');
+            if (stripos($sizeInput, 'large') !== false || stripos($sizeInput, 'besar') !== false) {
+                $finalPrice += 3000;
+            }
+
+            $noteParts[] = 'Suhu: ' . ($validated['temperature'] ?? '-');
+            $noteParts[] = 'Ukuran: ' . ($validated['size'] ?? 'Regular');
         }
+
+        $noteParts[] = 'Catatan: ' . (($validated['note'] ?? '') ?: '-');
 
         CartItem::create([
             'cart_id' => $cart->id,
             'product_id' => $product->id,
             'quantity' => (int) $validated['quantity'],
             'price' => $finalPrice,
-            'note' => 'Suhu: ' . ($validated['temperature'] ?? '-') . ', Ukuran: ' . ($validated['size'] ?? 'Regular') . '. Catatan: ' . (($validated['note'] ?? '') ?: '-'),
+            'note' => implode(', ', $noteParts),
         ]);
 
         return ['ok' => true];

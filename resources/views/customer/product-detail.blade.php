@@ -7,6 +7,9 @@
     $cleanImage = $product->image
         ? preg_replace('#^(public/|storage/)#', '', ltrim($product->image, '/'))
         : null;
+
+    $categoryText = strtolower(($product->category->name ?? '') . ' ' . ($product->category->slug ?? ''));
+    $isDrink = (bool) preg_match('/\b(minuman|drink|drinks|beverage|beverages|kopi|coffee|tea|teh|matcha|latte|juice|jus|mocktail|milk)\b/', $categoryText);
 @endphp
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
@@ -53,41 +56,43 @@
                     <form id="productOrderForm" action="{{ route('customer.cart.add', $product->id) }}" method="POST" class="mt-6 space-y-4">
                         @csrf
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Pilihan Suhu</label>
-                            <div class="grid grid-cols-2 gap-3">
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="temperature" value="Ice" class="peer sr-only" {{ old('temperature', 'Ice') === 'Ice' ? 'checked' : '' }}>
-                                    <div class="border border-gray-200 peer-checked:border-[#2C2623] peer-checked:bg-[#2C2623] peer-checked:text-white rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700 transition">
-                                        Dingin (Ice)
-                                    </div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="temperature" value="Hot" class="peer sr-only" {{ old('temperature') === 'Hot' ? 'checked' : '' }}>
-                                    <div class="border border-gray-200 peer-checked:border-[#2C2623] peer-checked:bg-[#2C2623] peer-checked:text-white rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700 transition">
-                                        Panas (Hot)
-                                    </div>
-                                </label>
+                        @if($isDrink)
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Pilihan Suhu</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="temperature" value="Ice" class="peer sr-only" {{ old('temperature', 'Ice') === 'Ice' ? 'checked' : '' }}>
+                                        <div class="border border-gray-200 peer-checked:border-[#2C2623] peer-checked:bg-[#2C2623] peer-checked:text-white rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700 transition">
+                                            Dingin (Ice)
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="temperature" value="Hot" class="peer sr-only" {{ old('temperature') === 'Hot' ? 'checked' : '' }}>
+                                        <div class="border border-gray-200 peer-checked:border-[#2C2623] peer-checked:bg-[#2C2623] peer-checked:text-white rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700 transition">
+                                            Panas (Hot)
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Ukuran Gelas</label>
-                            <div class="grid grid-cols-2 gap-3">
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="size" value="Regular" class="peer sr-only" {{ old('size', 'Regular') === 'Regular' ? 'checked' : '' }}>
-                                    <div class="border border-gray-200 peer-checked:border-[#2C2623] peer-checked:bg-[#2C2623] peer-checked:text-white rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700 transition">
-                                        Regular
-                                    </div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="size" value="Large" class="peer sr-only" {{ old('size') === 'Large' ? 'checked' : '' }}>
-                                    <div class="border border-gray-200 peer-checked:border-[#2C2623] peer-checked:bg-[#2C2623] peer-checked:text-white rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700 transition">
-                                        Large (+Rp 3.000)
-                                    </div>
-                                </label>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Ukuran Gelas</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="size" value="Regular" class="peer sr-only" {{ old('size', 'Regular') === 'Regular' ? 'checked' : '' }}>
+                                        <div class="border border-gray-200 peer-checked:border-[#2C2623] peer-checked:bg-[#2C2623] peer-checked:text-white rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700 transition">
+                                            Regular
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="size" value="Large" class="peer sr-only" {{ old('size') === 'Large' ? 'checked' : '' }}>
+                                        <div class="border border-gray-200 peer-checked:border-[#2C2623] peer-checked:bg-[#2C2623] peer-checked:text-white rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700 transition">
+                                            Large (+Rp 3.000)
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
-                        </div>
+                        @endif
 
                         <div class="grid grid-cols-3 gap-3">
                             <div>
@@ -96,7 +101,7 @@
                             </div>
                             <div class="col-span-2">
                                 <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Catatan (Opsional)</label>
-                                <input type="text" name="note" value="{{ old('note') }}" placeholder="Contoh: less sugar" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-[#2C2623] focus:outline-none focus:border-[#2C2623]">
+                                <input type="text" name="note" value="{{ old('note') }}" placeholder="{{ $isDrink ? 'Contoh: less sugar' : 'Contoh: tanpa sayur / tidak pedas' }}" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-[#2C2623] focus:outline-none focus:border-[#2C2623]">
                             </div>
                         </div>
 
@@ -106,11 +111,11 @@
                                     class="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-[#2C2623] rounded-xl text-center font-semibold text-sm transition {{ (!$product->is_active || $product->stock <= 0) ? 'opacity-50 pointer-events-none' : '' }}">
                                 + Keranjang
                             </button>
-                            <button type="submit"
+                            {{-- <button type="submit"
                                     formaction="{{ route('customer.products.buy-now', $product->id) }}"
                                     class="flex-1 py-3 px-4 bg-[#2C2623] hover:bg-black text-white rounded-xl text-center font-semibold text-sm transition shadow-sm {{ (!$product->is_active || $product->stock <= 0) ? 'opacity-50 pointer-events-none' : '' }}">
                                 Checkout Langsung
-                            </button>
+                            </button> --}}
                         </div>
                     </form>
                 @else
@@ -121,24 +126,26 @@
                     </div>
                 @endif
             @else
-                <!-- Simulasi Pilihan (Opsional untuk dilihat tamu) -->
-                <div class="mt-6 space-y-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Pilihan Suhu</label>
-                        <div class="flex space-x-3">
-                            <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Dingin (Ice)</div>
-                            <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Panas (Hot)</div>
+                @if($isDrink)
+                    <!-- Simulasi Pilihan Khusus Minuman untuk Tamu -->
+                    <div class="mt-6 space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Pilihan Suhu</label>
+                            <div class="flex space-x-3">
+                                <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Dingin (Ice)</div>
+                                <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Panas (Hot)</div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Ukuran Gelas</label>
-                        <div class="flex space-x-3">
-                            <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Regular</div>
-                            <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Large (+Rp 3.000)</div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Ukuran Gelas</label>
+                            <div class="flex space-x-3">
+                                <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Regular</div>
+                                <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Large (+Rp 3.000)</div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                @endif
 
                 <!-- Box Peringatan Wajib Login untuk Memesan -->
                 <div class="mt-8 pt-6 border-t border-gray-100">

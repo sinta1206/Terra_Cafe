@@ -7,6 +7,9 @@
     $cleanImage = $product->image
         ? preg_replace('#^(public/|storage/)#', '', ltrim($product->image, '/'))
         : null;
+
+    $categoryText = strtolower(($product->category->name ?? '') . ' ' . ($product->category->slug ?? ''));
+    $isDrink = (bool) preg_match('/\b(minuman|drink|drinks|beverage|beverages|kopi|coffee|tea|teh|matcha|latte|juice|jus|mocktail|milk)\b/', $categoryText);
 @endphp
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
@@ -37,24 +40,26 @@
                 <p class="text-sm text-gray-600 mt-4 leading-relaxed">{{ $product->description }}</p>
             </div>
 
-            <!-- Simulasi Pilihan (Opsional untuk dilihat tamu) -->
-            <div class="mt-6 space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Pilihan Suhu</label>
-                    <div class="flex space-x-3">
-                        <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Dingin (Ice)</div>
-                        <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Panas (Hot)</div>
+            @if($isDrink)
+                <!-- Simulasi Pilihan Khusus Minuman untuk Tamu -->
+                <div class="mt-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Pilihan Suhu</label>
+                        <div class="flex space-x-3">
+                            <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Dingin (Ice)</div>
+                            <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Panas (Hot)</div>
+                        </div>
                     </div>
-                </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Ukuran Gelas</label>
-                    <div class="flex space-x-3">
-                        <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Regular</div>
-                        <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Large (+Rp 3.000)</div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Ukuran Gelas</label>
+                        <div class="flex space-x-3">
+                            <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Regular</div>
+                            <div class="flex-1 border border-gray-200 rounded-xl p-2.5 text-center text-sm font-medium bg-gray-50 text-gray-700">Large (+Rp 3.000)</div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            @endif
 
             <!-- Box Peringatan Wajib Login untuk Memesan -->
             <div class="mt-8 pt-6 border-t border-gray-100">
